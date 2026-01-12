@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, Trophy, LogOut, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Recycle, Puzzle, Type, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { Header } from '@/components/dashboard/Header';
+import { UserStats } from '@/components/dashboard/UserStats';
+import { GameCard } from '@/components/dashboard/GameCard';
 
 const Index = () => {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,12 +15,6 @@ const Index = () => {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
-
-  const handleLogout = async () => {
-    await signOut();
-    toast.success('See you soon, eco-warrior! 🌿');
-    navigate('/auth');
-  };
 
   if (loading) {
     return (
@@ -33,81 +28,71 @@ const Index = () => {
     return null;
   }
 
+  const showAdvancedQuiz = profile.class >= 10;
+
   return (
     <div className="min-h-screen gradient-sky leaf-pattern">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full gradient-nature flex items-center justify-center shadow-soft">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-xl text-foreground">EcoQuest</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full">
-              <Trophy className="w-4 h-4 text-eco-sun" />
-              <span className="font-semibold text-foreground">{profile.points} pts</span>
-            </div>
-            
-            <Button
-              onClick={handleLogout}
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Welcome Card */}
-        <div className="eco-card max-w-2xl mx-auto text-center animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full gradient-nature shadow-glow mb-6">
-            <Sparkles className="w-10 h-10 text-primary-foreground animate-float" />
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* User Stats */}
+        <UserStats />
+
+        {/* Games Section */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-display font-bold text-xl text-foreground">🎮 Eco Games</h2>
+            <span className="text-sm text-muted-foreground">
+              ({showAdvancedQuiz ? 4 : 3} games available)
+            </span>
           </div>
-          
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-            Welcome, {profile.name}! 🌱
-          </h1>
-          
-          <p className="text-muted-foreground mb-6">
-            Ready to save the planet, one quest at a time?
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Waste Sorting Game */}
+            <GameCard
+              title="Waste Sorting Game"
+              description="Learn to sort waste into the correct recycling bins. Save the planet one item at a time!"
+              icon={<Recycle className="w-7 h-7 text-eco-leaf" />}
+              path="/games/waste-sorting"
+              color="green"
+            />
+
+            {/* Eco Puzzle */}
+            <GameCard
+              title="Eco Puzzle"
+              description="Solve beautiful nature-themed puzzles while discovering amazing eco-facts!"
+              icon={<Puzzle className="w-7 h-7 text-blue-500" />}
+              path="/games/eco-puzzle"
+              color="blue"
+            />
+
+            {/* Eco Wordle */}
+            <GameCard
+              title="Eco Wordle"
+              description="Guess the hidden eco-word in 6 tries! Expand your environmental vocabulary."
+              icon={<Type className="w-7 h-7 text-eco-earth" />}
+              path="/games/eco-wordle"
+              color="orange"
+            />
+
+            {/* Environmental Quiz - Only for Class 10+ */}
+            {showAdvancedQuiz && (
+              <GameCard
+                title="Environmental Quiz Challenge"
+                description="Advanced environmental science questions for senior students. Test your knowledge!"
+                icon={<Brain className="w-7 h-7 text-purple-500" />}
+                path="/games/environmental-quiz"
+                color="purple"
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Motivational Footer */}
+        <div className="text-center py-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-muted-foreground text-sm">
+            🌍 Every game you play helps you learn how to protect our planet!
           </p>
-
-          {/* Profile Info */}
-          <div className="grid grid-cols-2 gap-4 mt-8 text-left">
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground">School/College</p>
-              <p className="font-semibold text-foreground">{profile.institution}</p>
-            </div>
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground">Class</p>
-              <p className="font-semibold text-foreground">Class {profile.class}</p>
-            </div>
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground">State</p>
-              <p className="font-semibold text-foreground">{profile.state}</p>
-            </div>
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground">Country</p>
-              <p className="font-semibold text-foreground">{profile.country}</p>
-            </div>
-          </div>
-
-          {/* Points Card */}
-          <div className="mt-8 p-6 gradient-nature rounded-2xl text-primary-foreground">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <Trophy className="w-8 h-8" />
-              <span className="text-4xl font-bold">{profile.points}</span>
-            </div>
-            <p className="text-primary-foreground/80">Eco Points</p>
-          </div>
         </div>
       </main>
     </div>
