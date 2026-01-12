@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Leaf, LogOut, Trophy, User } from 'lucide-react';
+import { Leaf, LogOut, Trophy, User, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ export function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 rounded-xl gradient-nature flex items-center justify-center shadow-soft">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -27,10 +27,10 @@ export function Header() {
               <span className="font-display font-bold text-xl text-foreground">EcoQuest</span>
               <span className="text-xl">🌱</span>
             </div>
-          </div>
+          </button>
 
-          {/* Right side - User info & logout */}
-          <div className="flex items-center gap-3">
+          {/* Right side - User info & actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Points badge */}
             <div className="hidden sm:flex items-center gap-2 bg-eco-sun/20 px-4 py-2 rounded-full">
               <Trophy className="w-4 h-4 text-eco-earth" />
@@ -38,18 +38,29 @@ export function Header() {
               <span className="text-sm text-eco-earth/70">pts</span>
             </div>
 
-            {/* User name */}
-            <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium text-foreground text-sm max-w-[100px] truncate">
-                {profile?.name ?? 'User'}
-              </span>
-            </div>
-
             {/* Mobile points */}
             <div className="sm:hidden flex items-center gap-1 bg-eco-sun/20 px-3 py-2 rounded-full">
               <Trophy className="w-4 h-4 text-eco-earth" />
               <span className="font-bold text-eco-earth text-sm">{profile?.points ?? 0}</span>
+            </div>
+
+            {/* Progress button */}
+            <Button
+              onClick={() => navigate('/progress')}
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-primary"
+              title="View Progress"
+            >
+              <BarChart3 className="w-5 h-5" />
+            </Button>
+
+            {/* User name - desktop only */}
+            <div className="hidden md:flex items-center gap-2 bg-muted px-4 py-2 rounded-full">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium text-foreground text-sm max-w-[100px] truncate">
+                {profile?.name ?? 'User'}
+              </span>
             </div>
 
             {/* Logout */}

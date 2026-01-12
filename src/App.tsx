@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 import WasteSorting from "./pages/games/WasteSorting";
 import EcoPuzzle from "./pages/games/EcoPuzzle";
@@ -24,6 +25,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/progress" element={<Progress />} />
             <Route path="/games/waste-sorting" element={<WasteSorting />} />
             <Route path="/games/eco-puzzle" element={<EcoPuzzle />} />
             <Route path="/games/eco-wordle" element={<EcoWordle />} />

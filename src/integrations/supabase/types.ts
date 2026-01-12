@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_progress: {
+        Row: {
+          game_name: string
+          id: string
+          times_played: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          game_name: string
+          id?: string
+          times_played?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          game_name?: string
+          id?: string
+          times_played?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           class: number
@@ -55,7 +90,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_game: {
+        Args: {
+          p_game_name: string
+          p_points_earned: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
