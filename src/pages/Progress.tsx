@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Gamepad2, TrendingUp, Recycle, Puzzle, Type, Brain } from 'lucide-react';
+import { ArrowLeft, Trophy, Gamepad2, TrendingUp, Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress, GameName } from '@/hooks/useGameProgress';
@@ -20,6 +20,10 @@ const GAME_INFO: Record<GameName, { name: string; icon: React.ReactNode; color: 
   'eco-puzzle': { name: 'Eco Puzzle', icon: <Puzzle className="w-5 h-5" />, color: 'text-blue-500' },
   'eco-wordle': { name: 'Eco Wordle', icon: <Type className="w-5 h-5" />, color: 'text-eco-earth' },
   'environmental-quiz': { name: 'Environmental Quiz', icon: <Brain className="w-5 h-5" />, color: 'text-purple-500' },
+  'carbon-footprint': { name: 'Carbon Footprint', icon: <Globe className="w-5 h-5" />, color: 'text-teal-500' },
+  'eco-match': { name: 'Eco Match', icon: <Sparkles className="w-5 h-5" />, color: 'text-pink-500' },
+  'save-the-forest': { name: 'Save the Forest', icon: <TreePine className="w-5 h-5" />, color: 'text-green-600' },
+  'rapid-eco-quiz': { name: 'Rapid Eco Quiz', icon: <Zap className="w-5 h-5" />, color: 'text-yellow-500' },
 };
 
 export default function Progress() {

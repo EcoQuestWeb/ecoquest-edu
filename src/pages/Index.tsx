@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Recycle, Puzzle, Type, Brain } from 'lucide-react';
+import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
@@ -50,7 +50,7 @@ const Index = () => {
           <div className="flex items-center gap-2 mb-4">
             <h2 className="font-display font-bold text-xl text-foreground">🎮 Eco Games</h2>
             <span className="text-sm text-muted-foreground">
-              ({showAdvancedQuiz ? 4 : 3} games available)
+              ({showAdvancedQuiz ? 8 : 7} games available)
             </span>
           </div>
 
@@ -80,6 +80,42 @@ const Index = () => {
               icon={<Type className="w-7 h-7 text-eco-earth" />}
               path="/games/eco-wordle"
               color="orange"
+            />
+
+            {/* Carbon Footprint Calculator */}
+            <GameCard
+              title="Carbon Footprint Calculator 🌍"
+              description="Answer simple questions to discover your environmental impact and earn points!"
+              icon={<Globe className="w-7 h-7 text-teal-500" />}
+              path="/games/carbon-footprint"
+              color="teal"
+            />
+
+            {/* Eco Match Game */}
+            <GameCard
+              title="Eco Match Game 🧠"
+              description="Match items with their correct environmental actions. Test your eco-knowledge!"
+              icon={<Sparkles className="w-7 h-7 text-pink-500" />}
+              path="/games/eco-match"
+              color="pink"
+            />
+
+            {/* Save the Forest */}
+            <GameCard
+              title="Save the Forest 🌳"
+              description="Make decisions to protect Greenwood Forest. Your choices shape the ecosystem!"
+              icon={<TreePine className="w-7 h-7 text-green-600" />}
+              path="/games/save-the-forest"
+              color="green"
+            />
+
+            {/* Rapid Eco Quiz */}
+            <GameCard
+              title="Rapid Eco Quiz ⚡"
+              description="Quick-fire environmental questions with a timer. Build streaks for bonus points!"
+              icon={<Zap className="w-7 h-7 text-yellow-500" />}
+              path="/games/rapid-eco-quiz"
+              color="yellow"
             />
 
             {/* Environmental Quiz - Only for Class 10+ */}

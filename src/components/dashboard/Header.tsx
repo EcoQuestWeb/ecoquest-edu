@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Leaf, LogOut, Trophy, User, BarChart3, Crown } from 'lucide-react';
+import { LogOut, Trophy, User, BarChart3, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -22,14 +22,8 @@ export function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-xl gradient-nature flex items-center justify-center shadow-soft">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="font-display font-bold text-xl text-foreground">EcoQuest</span>
-              <span className="text-xl">🌱</span>
-            </div>
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <span className="font-display font-bold text-xl text-foreground">🌱 EcoQuest</span>
           </button>
 
           {/* Right side - User info & actions */}
