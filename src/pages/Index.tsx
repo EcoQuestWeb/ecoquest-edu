@@ -7,8 +7,15 @@ import { UserStats } from '@/components/dashboard/UserStats';
 import { GameCard } from '@/components/dashboard/GameCard';
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+
+  // Refresh profile on navigation to ensure points are up-to-date
+  useEffect(() => {
+    if (user && !loading) {
+      refreshProfile();
+    }
+  }, [user, loading, refreshProfile]);
 
   useEffect(() => {
     if (!loading && !user) {

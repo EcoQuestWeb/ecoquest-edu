@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Progress from "./pages/Progress";
+import Profile from "./pages/Profile";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import WasteSorting from "./pages/games/WasteSorting";
 import EcoPuzzle from "./pages/games/EcoPuzzle";
@@ -26,6 +28,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/progress" element={<Progress />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/games/waste-sorting" element={<WasteSorting />} />
             <Route path="/games/eco-puzzle" element={<EcoPuzzle />} />
             <Route path="/games/eco-wordle" element={<EcoWordle />} />
