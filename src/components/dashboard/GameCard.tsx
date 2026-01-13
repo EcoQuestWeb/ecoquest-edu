@@ -7,7 +7,7 @@ interface GameCardProps {
   description: string;
   icon: ReactNode;
   path: string;
-  color: 'green' | 'blue' | 'orange' | 'purple';
+  color: 'green' | 'blue' | 'orange' | 'purple' | 'teal' | 'pink' | 'yellow';
 }
 
 const colorClasses = {
@@ -15,6 +15,9 @@ const colorClasses = {
   blue: 'from-eco-sky to-blue-500',
   orange: 'from-eco-sun to-orange-500',
   purple: 'from-purple-400 to-purple-600',
+  teal: 'from-teal-400 to-teal-600',
+  pink: 'from-pink-400 to-pink-600',
+  yellow: 'from-yellow-400 to-yellow-600',
 };
 
 const bgColorClasses = {
@@ -22,6 +25,9 @@ const bgColorClasses = {
   blue: 'bg-eco-sky/20',
   orange: 'bg-eco-sun/20',
   purple: 'bg-purple-100',
+  teal: 'bg-teal-100',
+  pink: 'bg-pink-100',
+  yellow: 'bg-yellow-100',
 };
 
 export function GameCard({ title, description, icon, path, color }: GameCardProps) {

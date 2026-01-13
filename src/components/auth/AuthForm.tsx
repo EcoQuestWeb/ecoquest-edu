@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Leaf, Mail, Lock, User, School, MapPin, Globe, ChevronDown } from 'lucide-react';
+import { Mail, Lock, User, School, MapPin, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -130,10 +130,7 @@ export function AuthForm() {
     <div className="w-full max-w-md mx-auto">
       {/* Logo and Title */}
       <div className="text-center mb-8 animate-fade-in-up">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full gradient-nature shadow-glow mb-4">
-          <Leaf className="w-8 h-8 text-primary-foreground animate-leaf-sway" />
-        </div>
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">EcoQuest</h1>
+        <h1 className="text-3xl font-display font-bold text-foreground mb-2">🌱 EcoQuest</h1>
         <p className="text-muted-foreground">
           {isSignUp ? 'Join the eco-warriors!' : 'Welcome back, eco-warrior!'}
         </p>
