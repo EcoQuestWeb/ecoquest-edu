@@ -55,6 +55,7 @@ export type Database = {
           country: string
           created_at: string
           email: string | null
+          gender: string
           id: string
           institution: string
           name: string
@@ -66,6 +67,7 @@ export type Database = {
           country: string
           created_at?: string
           email?: string | null
+          gender?: string
           id: string
           institution: string
           name: string
@@ -77,6 +79,7 @@ export type Database = {
           country?: string
           created_at?: string
           email?: string | null
+          gender?: string
           id?: string
           institution?: string
           name?: string

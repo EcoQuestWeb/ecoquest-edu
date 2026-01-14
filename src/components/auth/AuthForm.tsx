@@ -21,6 +21,7 @@ const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
   institution: z.string().min(2, 'Institution name is required').max(200),
   classLevel: z.string().min(1, 'Please select your class'),
+  gender: z.string().min(1, 'Please select your gender'),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   state: z.string().min(2, 'State is required').max(100),
   country: z.string().min(2, 'Country is required').max(100),
@@ -56,6 +57,7 @@ export function AuthForm() {
       name: '',
       institution: '',
       classLevel: '',
+      gender: '',
       email: '',
       state: '',
       country: '',
@@ -86,6 +88,7 @@ export function AuthForm() {
         name: data.name,
         institution: data.institution,
         class: parseInt(data.classLevel),
+        gender: data.gender,
         email: showEmailField ? data.email || null : null,
         state: data.state,
         country: data.country,
@@ -224,6 +227,28 @@ export function AuthForm() {
               </Select>
               {signUpForm.formState.errors.classLevel && (
                 <p className="text-sm text-destructive">{signUpForm.formState.errors.classLevel.message}</p>
+              )}
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <Label htmlFor="gender" className="text-sm font-medium">
+                Gender <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={signUpForm.watch('gender')}
+                onValueChange={(value) => signUpForm.setValue('gender', value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your gender" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+              {signUpForm.formState.errors.gender && (
+                <p className="text-sm text-destructive">{signUpForm.formState.errors.gender.message}</p>
               )}
             </div>
 
