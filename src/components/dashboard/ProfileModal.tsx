@@ -33,6 +33,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
     name: profile?.name || '',
     institution: profile?.institution || '',
     class: profile?.class || 1,
+    gender: profile?.gender || 'male',
   });
 
   const handleLogout = async () => {
@@ -46,6 +47,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
       name: profile?.name || '',
       institution: profile?.institution || '',
       class: profile?.class || 1,
+      gender: profile?.gender || 'male',
     });
     setIsEditing(true);
   };
@@ -61,6 +63,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
           name: editedData.name,
           institution: editedData.institution,
           class: editedData.class,
+          gender: editedData.gender,
         })
         .eq('id', profile.id);
 
@@ -85,6 +88,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
       name: profile?.name || '',
       institution: profile?.institution || '',
       class: profile?.class || 1,
+      gender: profile?.gender || 'male',
     });
   };
 
@@ -102,9 +106,9 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
           <div className="flex flex-col items-center pt-2">
-            {/* Avatar */}
+            {/* Avatar - Shows edited gender in edit mode */}
             <div className="w-20 h-20 rounded-full gradient-nature flex items-center justify-center mb-3 shadow-glow">
-              {profile.gender === 'female' ? (
+              {(isEditing ? editedData.gender : profile.gender) === 'female' ? (
                 <span className="text-4xl">👩</span>
               ) : (
                 <span className="text-4xl">👨</span>
@@ -172,8 +176,24 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
                   </Select>
                 </div>
 
+                {/* Editable: Gender */}
+                <div className="space-y-1">
+                  <Label htmlFor="edit-gender" className="text-xs text-muted-foreground uppercase">Gender</Label>
+                  <Select
+                    value={editedData.gender}
+                    onValueChange={(value) => setEditedData({ ...editedData, gender: value })}
+                  >
+                    <SelectTrigger className="bg-muted/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Read-only fields in edit mode */}
-                <ProfileField icon={<User className="w-4 h-4" />} label="Gender" value={profile.gender === 'female' ? 'Female' : 'Male'} />
                 <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
                 <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />
               </>

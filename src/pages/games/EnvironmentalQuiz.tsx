@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Brain, RotateCcw, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 
-const QUIZ_QUESTIONS = [
+const ALL_QUIZ_QUESTIONS = [
   {
     question: "What is the main greenhouse gas responsible for global warming?",
     options: ["Oxygen (O₂)", "Carbon Dioxide (CO₂)", "Nitrogen (N₂)", "Helium (He)"],
@@ -46,14 +46,62 @@ const QUIZ_QUESTIONS = [
     options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Argon"],
     correct: 2,
   },
+  {
+    question: "What is the greenhouse effect?",
+    options: ["Plants growing in greenhouses", "Heat trapped by atmospheric gases", "Green-colored light from the sun", "Cooling of the atmosphere"],
+    correct: 1,
+  },
+  {
+    question: "Which ecosystem is known as the 'lungs of the Earth'?",
+    options: ["Coral reefs", "Deserts", "Amazon rainforest", "Arctic tundra"],
+    correct: 2,
+  },
+  {
+    question: "What causes acid rain?",
+    options: ["Too much oxygen", "Sulfur dioxide and nitrogen oxides", "Carbon monoxide", "Water vapor"],
+    correct: 1,
+  },
+  {
+    question: "How much of Earth's surface is covered by water?",
+    options: ["About 50%", "About 60%", "About 71%", "About 85%"],
+    correct: 2,
+  },
+  {
+    question: "What is the main cause of coral bleaching?",
+    options: ["Overfishing", "Ocean warming", "Plastic pollution", "Oil spills"],
+    correct: 1,
+  },
+  {
+    question: "Which type of energy comes from the heat inside the Earth?",
+    options: ["Solar", "Wind", "Geothermal", "Hydroelectric"],
+    correct: 2,
+  },
+  {
+    question: "What is deforestation?",
+    options: ["Planting new trees", "Clearing of forests", "Forest fires", "Sustainable logging"],
+    correct: 1,
+  },
 ];
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 export default function EnvironmentalQuiz() {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
   const { completeGame } = useGameProgress();
 
-  const [questions, setQuestions] = useState<typeof QUIZ_QUESTIONS>([]);
+  // Content rotation
+  const usedQuestionsRef = useRef<Set<string>>(new Set());
+  const availablePoolRef = useRef<typeof ALL_QUIZ_QUESTIONS>(shuffleArray([...ALL_QUIZ_QUESTIONS]));
+
+  const [questions, setQuestions] = useState<typeof ALL_QUIZ_QUESTIONS>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -71,13 +119,29 @@ export default function EnvironmentalQuiz() {
     }
   }, [user, profile, loading, navigate]);
 
+  const getNextBatch = () => {
+    let available = availablePoolRef.current.filter(
+      q => !usedQuestionsRef.current.has(q.question)
+    );
+    
+    // If not enough questions, refill pool
+    if (available.length < 5) {
+      usedQuestionsRef.current.clear();
+      availablePoolRef.current = shuffleArray([...ALL_QUIZ_QUESTIONS]);
+      available = availablePoolRef.current;
+    }
+    
+    const batch = available.slice(0, 5);
+    batch.forEach(q => usedQuestionsRef.current.add(q.question));
+    return shuffleArray(batch);
+  };
+
   useEffect(() => {
     startQuiz();
   }, []);
 
   const startQuiz = () => {
-    const shuffled = [...QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 5);
-    setQuestions(shuffled);
+    setQuestions(getNextBatch());
     setCurrentIndex(0);
     setScore(0);
     setSelectedAnswer(null);

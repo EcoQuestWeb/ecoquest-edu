@@ -21,7 +21,7 @@ interface StoryScene {
   choices: StoryChoice[];
 }
 
-const storyScenes: StoryScene[] = [
+const allStoryScenes: StoryScene[] = [
   {
     id: 1,
     title: 'The Forest Awakens',
@@ -77,11 +77,47 @@ const storyScenes: StoryScene[] = [
       { text: 'Train young eco-guardians for every forest', points: 10, feedback: 'Empowering the next generation! The forest\'s future is bright.', isGood: true },
     ],
   },
+  {
+    id: 6,
+    title: 'The Drought',
+    narrative: 'A severe drought is threatening the forest. Water sources are drying up. What action do you take?',
+    image: '☀️',
+    choices: [
+      { text: 'Build rainwater harvesting systems', points: 10, feedback: 'Excellent! Collecting rainwater provides sustainable water supply.', isGood: true },
+      { text: 'Pump water from distant lakes', points: 2, feedback: 'This works short-term but harms other ecosystems.', isGood: false },
+      { text: 'Plant drought-resistant native species', points: 8, feedback: 'Smart! Adapting the forest to changing conditions.', isGood: true },
+    ],
+  },
+  {
+    id: 7,
+    title: 'Invasive Species',
+    narrative: 'An invasive plant species is spreading rapidly, choking native plants. How do you respond?',
+    image: '🌿',
+    choices: [
+      { text: 'Organize volunteer removal events', points: 10, feedback: 'Community action! Effective and educational.', isGood: true },
+      { text: 'Use chemical herbicides', points: 2, feedback: 'Chemicals can harm other plants and animals too.', isGood: false },
+      { text: 'Introduce natural predators of the invasive species', points: 8, feedback: 'Biological control - nature helping nature!', isGood: true },
+    ],
+  },
 ];
+
+// Shuffle to randomize which 5 scenes are selected
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 const SaveTheForest = () => {
   const navigate = useNavigate();
   const { completeGame } = useGameProgress();
+  
+  // Content rotation - select 5 random scenes
+  const [storyScenes] = useState<StoryScene[]>(() => shuffleArray([...allStoryScenes]).slice(0, 5));
+  
   const [currentScene, setCurrentScene] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<StoryChoice | null>(null);

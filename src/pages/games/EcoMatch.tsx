@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,11 +21,33 @@ const allMatchPairs: MatchItem[] = [
   { id: 6, item: 'Glass jars', action: 'Reuse or recycle', emoji: '🫙' },
   { id: 7, item: 'Newspaper', action: 'Paper recycling bin', emoji: '📰' },
   { id: 8, item: 'Cardboard boxes', action: 'Flatten and recycle', emoji: '📦' },
+  { id: 9, item: 'Plastic bags', action: 'Return to store recycling', emoji: '🛍️' },
+  { id: 10, item: 'Light bulbs', action: 'Special waste disposal', emoji: '💡' },
+  { id: 11, item: 'Medicine', action: 'Pharmacy take-back', emoji: '💊' },
+  { id: 12, item: 'Paint cans', action: 'Hazardous waste center', emoji: '🎨' },
+  { id: 13, item: 'Motor oil', action: 'Auto shop recycling', emoji: '🛢️' },
+  { id: 14, item: 'Ink cartridges', action: 'Office supply store return', emoji: '🖨️' },
+  { id: 15, item: 'Yard waste', action: 'Green bin composting', emoji: '🍂' },
+  { id: 16, item: 'Aluminum cans', action: 'Metal recycling bin', emoji: '🥤' },
 ];
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 const EcoMatch = () => {
   const navigate = useNavigate();
   const { completeGame } = useGameProgress();
+  
+  // Content rotation
+  const usedPairsRef = useRef<Set<number>>(new Set());
+  const availablePairsRef = useRef<MatchItem[]>(shuffleArray([...allMatchPairs]));
+  
   const [round, setRound] = useState(1);
   const [currentPairs, setCurrentPairs] = useState<MatchItem[]>([]);
   const [shuffledActions, setShuffledActions] = useState<string[]>([]);
@@ -37,12 +59,27 @@ const EcoMatch = () => {
   const [gameComplete, setGameComplete] = useState(false);
   const [totalRounds] = useState(3);
 
+  const getNextRoundPairs = () => {
+    let available = availablePairsRef.current.filter(
+      pair => !usedPairsRef.current.has(pair.id)
+    );
+    
+    // If not enough pairs, refill pool
+    if (available.length < 4) {
+      usedPairsRef.current.clear();
+      availablePairsRef.current = shuffleArray([...allMatchPairs]);
+      available = availablePairsRef.current;
+    }
+    
+    const pairs = available.slice(0, 4);
+    pairs.forEach(pair => usedPairsRef.current.add(pair.id));
+    return pairs;
+  };
+
   const initializeRound = () => {
-    // Pick 4 random pairs for this round
-    const shuffled = [...allMatchPairs].sort(() => Math.random() - 0.5);
-    const pairs = shuffled.slice(0, 4);
+    const pairs = getNextRoundPairs();
     setCurrentPairs(pairs);
-    setShuffledActions(pairs.map(p => p.action).sort(() => Math.random() - 0.5));
+    setShuffledActions(shuffleArray(pairs.map(p => p.action)));
     setSelectedItem(null);
     setSelectedAction(null);
     setMatchedItems([]);
@@ -128,6 +165,8 @@ const EcoMatch = () => {
               <div className="space-y-3">
                 <Button
                   onClick={() => {
+                    usedPairsRef.current.clear();
+                    availablePairsRef.current = shuffleArray([...allMatchPairs]);
                     setRound(1);
                     setScore(0);
                     setGameComplete(false);
