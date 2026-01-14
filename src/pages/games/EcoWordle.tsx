@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Type, RotateCcw, Delete } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 
-const ECO_WORDS = [
+const ALL_ECO_WORDS = [
   'EARTH', 'OCEAN', 'SOLAR', 'GREEN', 'OZONE', 'PLANT', 'WATER', 'TREES',
   'CORAL', 'CLEAN', 'FAUNA', 'FLORA', 'BIOME', 'CYCLE', 'WASTE', 'REUSE',
+  'POLAR', 'ALGAE', 'RIVER', 'MARSH', 'CLOUD', 'WINDS', 'STORM', 'FROST',
+  'BLOOM', 'GRAIN', 'SEEDS', 'ROOTS', 'SHORE', 'CAVES', 'PEAKS', 'DELTA',
 ];
 
 const KEYBOARD_ROWS = [
@@ -18,10 +20,23 @@ const KEYBOARD_ROWS = [
 
 type LetterStatus = 'correct' | 'present' | 'absent' | 'empty';
 
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function EcoWordle() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
+
+  // Content rotation - track used words
+  const usedWordsRef = useRef<Set<string>>(new Set());
+  const availableWordsRef = useRef<string[]>(shuffleArray([...ALL_ECO_WORDS]));
 
   const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -36,12 +51,29 @@ export default function EcoWordle() {
     }
   }, [user, loading, navigate]);
 
+  const getNextWord = useCallback(() => {
+    let available = availableWordsRef.current.filter(
+      word => !usedWordsRef.current.has(word)
+    );
+    
+    // If not enough words, refill pool
+    if (available.length === 0) {
+      usedWordsRef.current.clear();
+      availableWordsRef.current = shuffleArray([...ALL_ECO_WORDS]);
+      available = availableWordsRef.current;
+    }
+    
+    const word = available[0];
+    usedWordsRef.current.add(word);
+    return word;
+  }, []);
+
   useEffect(() => {
     startNewGame();
   }, []);
 
   const startNewGame = () => {
-    setTargetWord(ECO_WORDS[Math.floor(Math.random() * ECO_WORDS.length)]);
+    setTargetWord(getNextWord());
     setGuesses([]);
     setCurrentGuess('');
     setGameState('playing');

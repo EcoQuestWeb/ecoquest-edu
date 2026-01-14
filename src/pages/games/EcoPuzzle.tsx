@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Puzzle, RotateCcw, Trophy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 
-const PUZZLE_IMAGES = [
+const ALL_PUZZLE_THEMES = [
   { id: 1, name: 'Forest', emoji: '🌲', tiles: ['🌲', '🌳', '🌴', '🌿', '🍃', '🌱', '🪴', '🎋', '🎍'] },
   { id: 2, name: 'Ocean', emoji: '🌊', tiles: ['🌊', '🐋', '🐬', '🐠', '🐟', '🦈', '🐙', '🦑', '🐚'] },
   { id: 3, name: 'Wildlife', emoji: '🦁', tiles: ['🦁', '🐘', '🦒', '🦓', '🦏', '🐆', '🦍', '🐻', '🦌'] },
+  { id: 4, name: 'Birds', emoji: '🦅', tiles: ['🦅', '🦆', '🦢', '🦜', '🦩', '🐦', '🦉', '🐧', '🦚'] },
+  { id: 5, name: 'Flowers', emoji: '🌸', tiles: ['🌸', '🌺', '🌻', '🌹', '🌷', '💐', '🌼', '🪻', '🌾'] },
+  { id: 6, name: 'Weather', emoji: '☀️', tiles: ['☀️', '🌙', '⭐', '🌈', '☁️', '🌧️', '❄️', '⚡', '🌪️'] },
+  { id: 7, name: 'Insects', emoji: '🦋', tiles: ['🦋', '🐝', '🐛', '🐞', '🦗', '🐜', '🪲', '🦟', '🪳'] },
+  { id: 8, name: 'Desert', emoji: '🏜️', tiles: ['🏜️', '🌵', '🦂', '🐪', '🦎', '🐍', '☀️', '🪨', '🌾'] },
 ];
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -25,7 +30,11 @@ export default function EcoPuzzle() {
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
 
-  const [currentPuzzle, setCurrentPuzzle] = useState(PUZZLE_IMAGES[0]);
+  // Content rotation - track used themes
+  const usedThemesRef = useRef<Set<number>>(new Set());
+  const availableThemesRef = useRef<typeof ALL_PUZZLE_THEMES>(shuffleArray([...ALL_PUZZLE_THEMES]));
+
+  const [currentPuzzle, setCurrentPuzzle] = useState(ALL_PUZZLE_THEMES[0]);
   const [tiles, setTiles] = useState<string[]>([]);
   const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -38,12 +47,29 @@ export default function EcoPuzzle() {
     }
   }, [user, loading, navigate]);
 
+  const getNextPuzzle = () => {
+    let available = availableThemesRef.current.filter(
+      theme => !usedThemesRef.current.has(theme.id)
+    );
+    
+    // If not enough themes, refill pool
+    if (available.length === 0) {
+      usedThemesRef.current.clear();
+      availableThemesRef.current = shuffleArray([...ALL_PUZZLE_THEMES]);
+      available = availableThemesRef.current;
+    }
+    
+    const theme = available[0];
+    usedThemesRef.current.add(theme.id);
+    return theme;
+  };
+
   useEffect(() => {
     startNewPuzzle();
   }, []);
 
   const startNewPuzzle = () => {
-    const puzzle = PUZZLE_IMAGES[Math.floor(Math.random() * PUZZLE_IMAGES.length)];
+    const puzzle = getNextPuzzle();
     setCurrentPuzzle(puzzle);
     setTiles(shuffleArray(puzzle.tiles));
     setSelectedTiles([]);

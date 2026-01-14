@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Globe, Car, Home, Utensils, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Globe, Car, Home, Utensils, Check, Droplets, Recycle, Zap, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -14,7 +14,7 @@ interface Question {
   options: { label: string; value: number }[];
 }
 
-const questions: Question[] = [
+const allQuestions: Question[] = [
   {
     id: 1,
     category: 'Transportation',
@@ -54,7 +54,7 @@ const questions: Question[] = [
   {
     id: 4,
     category: 'Water Usage',
-    icon: <Globe className="w-6 h-6" />,
+    icon: <Droplets className="w-6 h-6" />,
     question: 'How long are your showers usually?',
     options: [
       { label: 'Under 5 minutes', value: 0 },
@@ -66,7 +66,7 @@ const questions: Question[] = [
   {
     id: 5,
     category: 'Recycling',
-    icon: <Globe className="w-6 h-6" />,
+    icon: <Recycle className="w-6 h-6" />,
     question: 'How often do you recycle?',
     options: [
       { label: 'Always - everything possible', value: 0 },
@@ -75,11 +75,102 @@ const questions: Question[] = [
       { label: 'Rarely or never', value: 6 },
     ],
   },
+  {
+    id: 6,
+    category: 'Electronics',
+    icon: <Zap className="w-6 h-6" />,
+    question: 'Do you unplug devices when not in use?',
+    options: [
+      { label: 'Always', value: 0 },
+      { label: 'Usually', value: 2 },
+      { label: 'Sometimes', value: 4 },
+      { label: 'Never', value: 6 },
+    ],
+  },
+  {
+    id: 7,
+    category: 'Shopping',
+    icon: <ShoppingBag className="w-6 h-6" />,
+    question: 'How often do you buy second-hand items?',
+    options: [
+      { label: 'Very often', value: 0 },
+      { label: 'Sometimes', value: 2 },
+      { label: 'Rarely', value: 4 },
+      { label: 'Never', value: 6 },
+    ],
+  },
+  {
+    id: 8,
+    category: 'Food Waste',
+    icon: <Utensils className="w-6 h-6" />,
+    question: 'How much food do you throw away?',
+    options: [
+      { label: 'Almost none - I plan meals', value: 0 },
+      { label: 'A little bit', value: 2 },
+      { label: 'Some food regularly', value: 4 },
+      { label: 'Quite a lot', value: 6 },
+    ],
+  },
+  {
+    id: 9,
+    category: 'Transportation',
+    icon: <Car className="w-6 h-6" />,
+    question: 'How often do you take flights?',
+    options: [
+      { label: 'Never', value: 0 },
+      { label: '1-2 times a year', value: 3 },
+      { label: '3-5 times a year', value: 5 },
+      { label: 'More than 5 times', value: 7 },
+    ],
+  },
+  {
+    id: 10,
+    category: 'Home',
+    icon: <Home className="w-6 h-6" />,
+    question: 'What temperature do you keep your home in winter?',
+    options: [
+      { label: 'Cool (below 65°F/18°C)', value: 0 },
+      { label: 'Moderate (65-70°F/18-21°C)', value: 2 },
+      { label: 'Warm (70-75°F/21-24°C)', value: 4 },
+      { label: 'Very warm (above 75°F/24°C)', value: 6 },
+    ],
+  },
 ];
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 const CarbonFootprint = () => {
   const navigate = useNavigate();
   const { completeGame } = useGameProgress();
+  
+  // Content rotation
+  const usedQuestionsRef = useRef<Set<number>>(new Set());
+  const availableQuestionsRef = useRef<Question[]>(shuffleArray([...allQuestions]));
+  
+  const getNextQuestions = () => {
+    let available = availableQuestionsRef.current.filter(
+      q => !usedQuestionsRef.current.has(q.id)
+    );
+    
+    if (available.length < 5) {
+      usedQuestionsRef.current.clear();
+      availableQuestionsRef.current = shuffleArray([...allQuestions]);
+      available = availableQuestionsRef.current;
+    }
+    
+    const batch = available.slice(0, 5);
+    batch.forEach(q => usedQuestionsRef.current.add(q.id));
+    return batch;
+  };
+  
+  const [questions] = useState<Question[]>(() => getNextQuestions());
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -150,10 +241,13 @@ const CarbonFootprint = () => {
               <div className="space-y-3">
                 <Button
                   onClick={() => {
+                    usedQuestionsRef.current.clear();
+                    availableQuestionsRef.current = shuffleArray([...allQuestions]);
                     setCurrentQuestion(0);
                     setAnswers([]);
                     setSelectedOption(null);
                     setGameComplete(false);
+                    window.location.reload(); // Reload to get fresh questions
                   }}
                   variant="outline"
                   className="w-full"

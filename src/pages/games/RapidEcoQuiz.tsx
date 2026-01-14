@@ -14,26 +14,34 @@ interface Question {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
-const easyQuestions: Question[] = [
+const allEasyQuestions: Question[] = [
   { question: 'What color bin is usually for paper recycling?', options: ['Red', 'Blue', 'Green', 'Yellow'], correct: 1, difficulty: 'easy' },
   { question: 'Which gas do trees absorb?', options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Hydrogen'], correct: 2, difficulty: 'easy' },
   { question: 'What is the largest ocean on Earth?', options: ['Atlantic', 'Indian', 'Arctic', 'Pacific'], correct: 3, difficulty: 'easy' },
   { question: 'Which of these can be composted?', options: ['Plastic bottle', 'Banana peel', 'Glass jar', 'Metal can'], correct: 1, difficulty: 'easy' },
   { question: 'What do solar panels convert into electricity?', options: ['Wind', 'Water', 'Sunlight', 'Heat'], correct: 2, difficulty: 'easy' },
   { question: 'How long does a plastic bag take to decompose?', options: ['1 year', '10 years', '100-500 years', '1 week'], correct: 2, difficulty: 'easy' },
+  { question: 'What is the symbol for recycling?', options: ['Circle', 'Square', 'Three arrows', 'Star'], correct: 2, difficulty: 'easy' },
+  { question: 'Which animal is endangered due to climate change?', options: ['Cat', 'Dog', 'Polar bear', 'Cow'], correct: 2, difficulty: 'easy' },
+  { question: 'What is rainwater harvesting?', options: ['Selling rain', 'Collecting rainwater', 'Making artificial rain', 'Drinking rain'], correct: 1, difficulty: 'easy' },
+  { question: 'Which energy source is NOT renewable?', options: ['Solar', 'Wind', 'Coal', 'Hydroelectric'], correct: 2, difficulty: 'easy' },
 ];
 
-const mediumQuestions: Question[] = [
+const allMediumQuestions: Question[] = [
   { question: 'What percentage of Earth\'s water is freshwater?', options: ['About 3%', 'About 30%', 'About 50%', 'About 70%'], correct: 0, difficulty: 'medium' },
   { question: 'Which renewable energy source is most used globally?', options: ['Solar', 'Wind', 'Hydropower', 'Geothermal'], correct: 2, difficulty: 'medium' },
   { question: 'What is the main cause of ocean acidification?', options: ['Plastic pollution', 'CO2 absorption', 'Oil spills', 'Overfishing'], correct: 1, difficulty: 'medium' },
   { question: 'Which country produces the most renewable energy?', options: ['USA', 'Germany', 'China', 'Brazil'], correct: 2, difficulty: 'medium' },
+  { question: 'What is the ozone layer?', options: ['A type of cloud', 'Protective gas layer', 'Ocean current', 'Mountain range'], correct: 1, difficulty: 'medium' },
+  { question: 'What causes the greenhouse effect?', options: ['Too many plants', 'Trapped heat from gases', 'Cold air', 'Ocean waves'], correct: 1, difficulty: 'medium' },
 ];
 
-const hardQuestions: Question[] = [
+const allHardQuestions: Question[] = [
   { question: 'What is the estimated number of species that go extinct every day?', options: ['1-5', '10-20', '50-100', '150-200'], correct: 3, difficulty: 'hard' },
   { question: 'What percentage of global emissions come from food production?', options: ['10-15%', '26-34%', '5-8%', '50-60%'], correct: 1, difficulty: 'hard' },
   { question: 'Which biome stores the most carbon?', options: ['Tropical rainforest', 'Boreal forest', 'Ocean', 'Grasslands'], correct: 2, difficulty: 'hard' },
+  { question: 'What is the Paris Agreement target for global warming?', options: ['1.5°C', '3°C', '5°C', '0.5°C'], correct: 0, difficulty: 'hard' },
+  { question: 'How much plastic enters the ocean annually?', options: ['1 million tons', '8 million tons', '100 million tons', '500 thousand tons'], correct: 1, difficulty: 'hard' },
 ];
 
 const RapidEcoQuiz = () => {
@@ -56,15 +64,15 @@ const RapidEcoQuiz = () => {
   const initializeQuestions = useCallback(() => {
     let selectedQuestions: Question[];
     if (isAdvanced) {
-      // Mix of all difficulties for advanced students
-      const easy = [...easyQuestions].sort(() => Math.random() - 0.5).slice(0, 3);
-      const medium = [...mediumQuestions].sort(() => Math.random() - 0.5).slice(0, 3);
-      const hard = [...hardQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
+      // Mix of all difficulties for advanced students - shuffled
+      const easy = [...allEasyQuestions].sort(() => Math.random() - 0.5).slice(0, 3);
+      const medium = [...allMediumQuestions].sort(() => Math.random() - 0.5).slice(0, 3);
+      const hard = [...allHardQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
       selectedQuestions = [...easy, ...medium, ...hard].sort(() => Math.random() - 0.5);
     } else {
-      // Easier mix for younger students
-      const easy = [...easyQuestions].sort(() => Math.random() - 0.5).slice(0, 5);
-      const medium = [...mediumQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
+      // Easier mix for younger students - shuffled
+      const easy = [...allEasyQuestions].sort(() => Math.random() - 0.5).slice(0, 5);
+      const medium = [...allMediumQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
       selectedQuestions = [...easy, ...medium].sort(() => Math.random() - 0.5);
     }
     setQuestions(selectedQuestions);

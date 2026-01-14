@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Recycle, Check, X, RotateCcw, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 
-const WASTE_ITEMS = [
+const ALL_WASTE_ITEMS = [
   { id: 1, name: 'Plastic Bottle', correctBin: 'plastic', emoji: '🧴' },
   { id: 2, name: 'Newspaper', correctBin: 'paper', emoji: '📰' },
   { id: 3, name: 'Apple Core', correctBin: 'organic', emoji: '🍎' },
@@ -16,6 +16,16 @@ const WASTE_ITEMS = [
   { id: 8, name: 'Milk Carton', correctBin: 'paper', emoji: '🥛' },
   { id: 9, name: 'Egg Shells', correctBin: 'organic', emoji: '🥚' },
   { id: 10, name: 'Plastic Bag', correctBin: 'plastic', emoji: '🛍️' },
+  { id: 11, name: 'Coffee Grounds', correctBin: 'organic', emoji: '☕' },
+  { id: 12, name: 'Wine Bottle', correctBin: 'glass', emoji: '🍾' },
+  { id: 13, name: 'Aluminum Foil', correctBin: 'metal', emoji: '🔲' },
+  { id: 14, name: 'Magazine', correctBin: 'paper', emoji: '📖' },
+  { id: 15, name: 'Yogurt Container', correctBin: 'plastic', emoji: '🥛' },
+  { id: 16, name: 'Tea Bags', correctBin: 'organic', emoji: '🍵' },
+  { id: 17, name: 'Light Bulb', correctBin: 'glass', emoji: '💡' },
+  { id: 18, name: 'Food Can', correctBin: 'metal', emoji: '🥫' },
+  { id: 19, name: 'Plastic Wrapper', correctBin: 'plastic', emoji: '🎁' },
+  { id: 20, name: 'Orange Peel', correctBin: 'organic', emoji: '🍊' },
 ];
 
 const BINS = [
@@ -26,12 +36,25 @@ const BINS = [
   { id: 'metal', name: 'Metal', color: 'bg-gray-500', emoji: '🔧' },
 ];
 
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function WasteSorting() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
   
-  const [items, setItems] = useState<typeof WASTE_ITEMS>([]);
+  // Content rotation - track used items across rounds
+  const usedItemsRef = useRef<Set<number>>(new Set());
+  const availablePoolRef = useRef<typeof ALL_WASTE_ITEMS>(shuffleArray([...ALL_WASTE_ITEMS]));
+  
+  const [items, setItems] = useState<typeof ALL_WASTE_ITEMS>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState(0);
@@ -45,10 +68,25 @@ export default function WasteSorting() {
     }
   }, [user, loading, navigate]);
 
+  const getNextBatch = () => {
+    let available = availablePoolRef.current.filter(
+      item => !usedItemsRef.current.has(item.id)
+    );
+    
+    // If not enough items, refill pool
+    if (available.length < 5) {
+      usedItemsRef.current.clear();
+      availablePoolRef.current = shuffleArray([...ALL_WASTE_ITEMS]);
+      available = availablePoolRef.current;
+    }
+    
+    const batch = available.slice(0, 5);
+    batch.forEach(item => usedItemsRef.current.add(item.id));
+    return shuffleArray(batch);
+  };
+
   useEffect(() => {
-    // Shuffle items at start
-    const shuffled = [...WASTE_ITEMS].sort(() => Math.random() - 0.5).slice(0, 5);
-    setItems(shuffled);
+    setItems(getNextBatch());
   }, []);
 
   const currentItem = items[currentIndex];
@@ -92,8 +130,7 @@ export default function WasteSorting() {
   };
 
   const restartGame = () => {
-    const shuffled = [...WASTE_ITEMS].sort(() => Math.random() - 0.5).slice(0, 5);
-    setItems(shuffled);
+    setItems(getNextBatch());
     setCurrentIndex(0);
     setScore(0);
     setWrongAnswers(0);
