@@ -10,6 +10,7 @@ interface UserProfile {
   email: string | null;
   state: string;
   country: string;
+  gender: string;
   points: number;
   created_at: string;
 }
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: profileData.email,
             state: profileData.state,
             country: profileData.country,
+            gender: profileData.gender,
           });
 
         if (profileError) {
