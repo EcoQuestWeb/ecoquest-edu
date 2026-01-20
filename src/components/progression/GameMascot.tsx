@@ -20,7 +20,8 @@ const moodAnimations = {
     rotate: [0, 5, -5, 0],
   },
   running: {
-    x: [0, 5, 0, -5, 0],
+    // Move forward (left-to-right) consistently
+    x: [0, 8, 0],
     y: [0, -8, 0, -8, 0],
   },
   celebrating: {

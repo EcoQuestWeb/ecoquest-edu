@@ -18,6 +18,7 @@ import CarbonFootprint from "./pages/games/CarbonFootprint";
 import EcoMatch from "./pages/games/EcoMatch";
 import SaveTheForest from "./pages/games/SaveTheForest";
 import RapidEcoQuiz from "./pages/games/RapidEcoQuiz";
+import OceanCleanup from "./pages/games/OceanCleanup";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/games/eco-match" element={<EcoMatch />} />
               <Route path="/games/save-the-forest" element={<SaveTheForest />} />
               <Route path="/games/rapid-eco-quiz" element={<RapidEcoQuiz />} />
+              <Route path="/games/ocean-cleanup" element={<OceanCleanup />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

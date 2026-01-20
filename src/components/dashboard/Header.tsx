@@ -23,7 +23,7 @@ export function Header() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50"
+        className="bg-card/95 backdrop-blur-md border-b border-border sticky top-0 z-40 shadow-sm"
       >
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between">

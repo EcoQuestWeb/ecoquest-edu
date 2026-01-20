@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap } from 'lucide-react';
+import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap, Waves } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
@@ -58,6 +58,13 @@ const Index = () => {
     path: string;
     color: GameColor;
   }> = [
+    {
+      title: "Ocean Cleanup Runner 🌊",
+      description: "Help clean the ocean! Collect floating trash while avoiding obstacles and learn about marine pollution!",
+      icon: <Waves className="w-6 h-6 sm:w-7 sm:h-7 text-blue-400" />,
+      path: "/games/ocean-cleanup",
+      color: "blue",
+    },
     {
       title: "Waste Sorting Game",
       description: "Learn to sort waste into the correct recycling bins. Save the planet one item at a time!",
@@ -124,7 +131,7 @@ const Index = () => {
       <Header />
 
       <PageTransition>
-        <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl pb-24">
+        <main className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-24 space-y-4 sm:space-y-6 max-w-4xl">
           {/* Mascot with greeting */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}

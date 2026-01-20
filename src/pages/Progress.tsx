@@ -26,6 +26,7 @@ const GAME_INFO: Record<GameName, { name: string; icon: React.ReactNode; color: 
   'eco-match': { name: 'Eco Match', icon: <Sparkles className="w-5 h-5" />, color: 'text-pink-500' },
   'save-the-forest': { name: 'Save the Forest', icon: <TreePine className="w-5 h-5" />, color: 'text-green-600' },
   'rapid-eco-quiz': { name: 'Rapid Eco Quiz', icon: <Zap className="w-5 h-5" />, color: 'text-yellow-500' },
+  'ocean-cleanup': { name: 'Ocean Cleanup', icon: <Sparkles className="w-5 h-5" />, color: 'text-blue-400' },
 };
 
 export default function Progress() {

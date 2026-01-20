@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export type GameName = 'waste-sorting' | 'eco-puzzle' | 'eco-wordle' | 'environmental-quiz' | 'carbon-footprint' | 'eco-match' | 'save-the-forest' | 'rapid-eco-quiz';
+export type GameName = 'waste-sorting' | 'eco-puzzle' | 'eco-wordle' | 'environmental-quiz' | 'carbon-footprint' | 'eco-match' | 'save-the-forest' | 'rapid-eco-quiz' | 'ocean-cleanup';
 
 interface GameResult {
   userTotalPoints: number;
