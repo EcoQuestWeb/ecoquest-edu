@@ -415,7 +415,7 @@ export function AuthForm() {
         >
           {isSignUp ? 'Sign In' : 'Sign Up'}
         </button>
-      </p>
-    </div>
+    </p>
+    </motion.div>
   );
 }
