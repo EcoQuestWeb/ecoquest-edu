@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 
-export type GameName = 'waste-sorting' | 'eco-puzzle' | 'eco-wordle' | 'environmental-quiz' | 'carbon-footprint' | 'eco-match' | 'save-the-forest' | 'rapid-eco-quiz';
+export type GameName = 'waste-sorting' | 'eco-puzzle' | 'eco-wordle' | 'environmental-quiz' | 'carbon-footprint' | 'eco-match' | 'save-the-forest' | 'rapid-eco-quiz' | 'ocean-cleanup';
 
 export interface GameLevelProgress {
   currentLevel: number;

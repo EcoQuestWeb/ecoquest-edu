@@ -44,6 +44,7 @@ const situations: Record<string, { emoji: string; label: string }> = {
   'save-the-forest': { emoji: '🌲', label: 'Forest Gate' },
   'rapid-eco-quiz': { emoji: '⚡', label: 'Speed Zone' },
   'environmental-quiz': { emoji: '🧠', label: 'Brain Power' },
+  'ocean-cleanup': { emoji: '🌊', label: 'Ocean Zone' },
 };
 
 const plantEmojis = ['🌰', '🌱', '🌿', '🪴', '🌳'];

@@ -22,8 +22,8 @@ export function RunningAvatar({ size = 'md', isRunning = true, className = '' }:
     <motion.div
       className={`${sizeClasses[size]} ${className} flex items-center justify-center`}
       animate={isRunning ? {
+        x: [0, 4, 0],
         y: [0, -8, 0],
-        scaleX: [1, 1.05, 1],
       } : {}}
       transition={{
         duration: 0.4,
@@ -31,7 +31,8 @@ export function RunningAvatar({ size = 'md', isRunning = true, className = '' }:
         ease: 'easeInOut',
       }}
     >
-      <span className="drop-shadow-lg">{avatar}</span>
+      {/* Ensure avatar always faces forward (left-to-right) */}
+      <span className="drop-shadow-lg" style={{ display: 'inline-block' }}>{avatar}</span>
     </motion.div>
   );
 }
