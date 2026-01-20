@@ -7,6 +7,7 @@ import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
 import { PageTransition } from '@/components/animations';
 import { RunnerBackground, RunningAvatar, GameCheckpoint } from '@/components/runner';
+import { GlobalStats, GameMascot } from '@/components/progression';
 
 const Index = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -124,15 +125,15 @@ const Index = () => {
 
       <PageTransition>
         <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl pb-24">
-          {/* Running Avatar with Welcome */}
+          {/* Mascot with greeting */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center gap-3 mb-2"
+            className="flex items-center gap-4 mb-2"
           >
-            <RunningAvatar size="md" isRunning={true} />
-            <div>
+            <GameMascot mood="running" size="md" showSpeech speechText="Let's save the planet! 🌍" />
+            <div className="flex-1">
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -151,6 +152,15 @@ const Index = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <UserStats />
+          </motion.div>
+
+          {/* Global Stats with Plant Growth */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <GlobalStats />
           </motion.div>
 
           {/* Games Section - Runner Track Style */}
@@ -208,8 +218,8 @@ const Index = () => {
               transition={{ duration: 2, repeat: Infinity }}
             >
               <span>🏃</span>
-              <span>Every game you complete brings you closer to saving the planet!</span>
-              <span>🌍</span>
+              <span>Complete levels to grow your plants into mighty trees!</span>
+              <span>🌳</span>
             </motion.p>
           </motion.div>
         </main>

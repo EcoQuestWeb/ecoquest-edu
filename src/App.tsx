@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LevelProgressProvider } from "@/contexts/LevelProgressContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Progress from "./pages/Progress";
@@ -27,22 +28,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/games/waste-sorting" element={<WasteSorting />} />
-            <Route path="/games/eco-puzzle" element={<EcoPuzzle />} />
-            <Route path="/games/eco-wordle" element={<EcoWordle />} />
-            <Route path="/games/environmental-quiz" element={<EnvironmentalQuiz />} />
-            <Route path="/games/carbon-footprint" element={<CarbonFootprint />} />
-            <Route path="/games/eco-match" element={<EcoMatch />} />
-            <Route path="/games/save-the-forest" element={<SaveTheForest />} />
-            <Route path="/games/rapid-eco-quiz" element={<RapidEcoQuiz />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <LevelProgressProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/progress" element={<Progress />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/games/waste-sorting" element={<WasteSorting />} />
+              <Route path="/games/eco-puzzle" element={<EcoPuzzle />} />
+              <Route path="/games/eco-wordle" element={<EcoWordle />} />
+              <Route path="/games/environmental-quiz" element={<EnvironmentalQuiz />} />
+              <Route path="/games/carbon-footprint" element={<CarbonFootprint />} />
+              <Route path="/games/eco-match" element={<EcoMatch />} />
+              <Route path="/games/save-the-forest" element={<SaveTheForest />} />
+              <Route path="/games/rapid-eco-quiz" element={<RapidEcoQuiz />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </LevelProgressProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

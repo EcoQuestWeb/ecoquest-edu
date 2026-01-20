@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Sparkles, Lock } from 'lucide-react';
+import { useLevelProgress, GameName } from '@/contexts/LevelProgressContext';
 
 interface GameCheckpointProps {
   title: string;
@@ -45,10 +46,17 @@ const situations: Record<string, { emoji: string; label: string }> = {
   'environmental-quiz': { emoji: '🧠', label: 'Brain Power' },
 };
 
+const plantEmojis = ['🌰', '🌱', '🌿', '🪴', '🌳'];
+
 export function GameCheckpoint({ title, description, icon, path, color, index }: GameCheckpointProps) {
   const navigate = useNavigate();
   const gameKey = path.split('/').pop() || '';
   const situation = situations[gameKey];
+  
+  const { getGameProgress, getPlantStage } = useLevelProgress();
+  const gameName = gameKey as GameName;
+  const progress = getGameProgress(gameName);
+  const plantStage = getPlantStage(gameName);
 
   return (
     <motion.div
@@ -97,6 +105,16 @@ export function GameCheckpoint({ title, description, icon, path, color, index }:
             transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
           />
 
+          {/* Progress bar */}
+          {progress.levelsCompleted.length > 0 && (
+            <motion.div
+              className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-eco-leaf to-eco-forest"
+              initial={{ scaleX: 0, originX: 0 }}
+              animate={{ scaleX: progress.levelsCompleted.length / 5 }}
+              transition={{ duration: 0.8, delay: index * 0.1 + 0.5 }}
+            />
+          )}
+
           {/* Situation badge */}
           {situation && (
             <motion.div
@@ -113,7 +131,7 @@ export function GameCheckpoint({ title, description, icon, path, color, index }:
           )}
 
           <div className="flex items-start gap-3 sm:gap-4 mt-1">
-            {/* Animated icon */}
+            {/* Animated icon with plant growth */}
             <motion.div
               className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${bgColorClasses[color]} flex items-center justify-center shrink-0 relative`}
               animate={{
@@ -149,14 +167,48 @@ export function GameCheckpoint({ title, description, icon, path, color, index }:
             </motion.div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 pr-8">
+            <div className="flex-1 min-w-0 pr-16">
               <h3 className="font-display font-bold text-sm sm:text-base text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
                 {title}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                 {description}
               </p>
+              
+              {/* Level progress indicator */}
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        progress.levelsCompleted.includes(i + 1)
+                          ? 'bg-eco-leaf'
+                          : 'bg-muted-foreground/30'
+                      }`}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: index * 0.1 + i * 0.05 }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Lv.{progress.currentLevel}
+                </span>
+              </div>
             </div>
+
+            {/* Plant growth indicator */}
+            <motion.div
+              className="absolute right-12 top-1/2 -translate-y-1/2"
+              animate={plantStage >= 4 ? { 
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0] 
+              } : undefined}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <span className="text-xl sm:text-2xl">{plantEmojis[plantStage]}</span>
+            </motion.div>
 
             {/* Arrow with running animation */}
             <motion.div
