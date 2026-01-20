@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, School, MapPin, Globe, Trophy, Calendar, LogOut, Pencil, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PointsCounter } from '@/components/animations';
 
 interface ProfileModalProps {
   open: boolean;
@@ -96,164 +98,208 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="w-[95vw] max-w-md mx-auto bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader className="relative">
-          <button
+          <motion.button
             onClick={onClose}
             className="absolute right-0 top-0 p-1 rounded-full hover:bg-muted transition-colors"
             aria-label="Close"
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
           >
             <X className="w-5 h-5 text-muted-foreground" />
-          </button>
+          </motion.button>
           <div className="flex flex-col items-center pt-2">
             {/* Avatar - Shows edited gender in edit mode */}
-            <div className="w-20 h-20 rounded-full gradient-nature flex items-center justify-center mb-3 shadow-glow">
+            <motion.div 
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full gradient-nature flex items-center justify-center mb-3 shadow-glow"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 0.5 }}
+            >
               {(isEditing ? editedData.gender : profile.gender) === 'female' ? (
-                <span className="text-4xl">👩</span>
+                <span className="text-3xl sm:text-4xl">👩</span>
               ) : (
-                <span className="text-4xl">👨</span>
+                <span className="text-3xl sm:text-4xl">👨</span>
               )}
-            </div>
-            <DialogTitle className="font-display text-xl text-foreground">
+            </motion.div>
+            <DialogTitle className="font-display text-lg sm:text-xl text-foreground">
               {isEditing ? 'Edit Profile' : profile.name}
             </DialogTitle>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <motion.div 
+          className="space-y-3 sm:space-y-4 py-3 sm:py-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           {/* Points Badge */}
-          <div className="bg-eco-sun/20 rounded-xl p-3 text-center">
+          <motion.div 
+            className="bg-eco-sun/20 rounded-xl p-3 text-center"
+            whileHover={{ scale: 1.02 }}
+          >
             <div className="flex items-center justify-center gap-2">
-              <Trophy className="w-5 h-5 text-eco-earth" />
-              <span className="font-display text-2xl font-bold text-eco-earth">{profile.points}</span>
-              <span className="text-sm text-eco-earth/70">Total Points</span>
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Trophy className="w-5 h-5 text-eco-earth" />
+              </motion.div>
+              <span className="font-display text-xl sm:text-2xl font-bold text-eco-earth">
+                <PointsCounter value={profile.points} />
+              </span>
+              <span className="text-xs sm:text-sm text-eco-earth/70">Total Points</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Profile Fields */}
-          <div className="space-y-3">
-            {isEditing ? (
-              <>
-                {/* Editable: Name */}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-name" className="text-xs text-muted-foreground uppercase">Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={editedData.name}
-                    onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-                    className="bg-muted/50"
-                  />
-                </div>
+          <div className="space-y-2 sm:space-y-3">
+            <AnimatePresence mode="wait">
+              {isEditing ? (
+                <motion.div
+                  key="editing"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-3"
+                >
+                  {/* Editable: Name */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-name" className="text-xs text-muted-foreground uppercase">Name</Label>
+                    <Input
+                      id="edit-name"
+                      value={editedData.name}
+                      onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+                      className="bg-muted/50"
+                    />
+                  </div>
 
-                {/* Editable: Institution */}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-institution" className="text-xs text-muted-foreground uppercase">College / School</Label>
-                  <Input
-                    id="edit-institution"
-                    value={editedData.institution}
-                    onChange={(e) => setEditedData({ ...editedData, institution: e.target.value })}
-                    className="bg-muted/50"
-                  />
-                </div>
+                  {/* Editable: Institution */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-institution" className="text-xs text-muted-foreground uppercase">College / School</Label>
+                    <Input
+                      id="edit-institution"
+                      value={editedData.institution}
+                      onChange={(e) => setEditedData({ ...editedData, institution: e.target.value })}
+                      className="bg-muted/50"
+                    />
+                  </div>
 
-                {/* Editable: Class */}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-class" className="text-xs text-muted-foreground uppercase">Class</Label>
-                  <Select
-                    value={editedData.class.toString()}
-                    onValueChange={(value) => setEditedData({ ...editedData, class: parseInt(value) })}
-                  >
-                    <SelectTrigger className="bg-muted/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          Class {num}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Editable: Class */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-class" className="text-xs text-muted-foreground uppercase">Class</Label>
+                    <Select
+                      value={editedData.class.toString()}
+                      onValueChange={(value) => setEditedData({ ...editedData, class: parseInt(value) })}
+                    >
+                      <SelectTrigger className="bg-muted/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            Class {num}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Editable: Gender */}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-gender" className="text-xs text-muted-foreground uppercase">Gender</Label>
-                  <Select
-                    value={editedData.gender}
-                    onValueChange={(value) => setEditedData({ ...editedData, gender: value })}
-                  >
-                    <SelectTrigger className="bg-muted/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Editable: Gender */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-gender" className="text-xs text-muted-foreground uppercase">Gender</Label>
+                    <Select
+                      value={editedData.gender}
+                      onValueChange={(value) => setEditedData({ ...editedData, gender: value })}
+                    >
+                      <SelectTrigger className="bg-muted/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Read-only fields in edit mode */}
-                <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
-                <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />
-              </>
-            ) : (
-              <>
-                <ProfileField icon={<User className="w-4 h-4" />} label="Name" value={profile.name} />
-                <ProfileField icon={<School className="w-4 h-4" />} label="College / School" value={profile.institution} />
-                <ProfileField icon={<Calendar className="w-4 h-4" />} label="Class" value={`Class ${profile.class}`} />
-                <ProfileField icon={<User className="w-4 h-4" />} label="Gender" value={profile.gender === 'female' ? 'Female' : 'Male'} />
-                <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
-                <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />
-              </>
-            )}
+                  {/* Read-only fields in edit mode */}
+                  <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
+                  <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="viewing"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-2"
+                >
+                  <ProfileField icon={<User className="w-4 h-4" />} label="Name" value={profile.name} />
+                  <ProfileField icon={<School className="w-4 h-4" />} label="College / School" value={profile.institution} />
+                  <ProfileField icon={<Calendar className="w-4 h-4" />} label="Class" value={`Class ${profile.class}`} />
+                  <ProfileField icon={<User className="w-4 h-4" />} label="Gender" value={profile.gender === 'female' ? 'Female' : 'Male'} />
+                  <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
+                  <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
 
         {/* Actions */}
         <div className="flex flex-col gap-2 pt-2">
           {isEditing ? (
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                className="flex-1"
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                className="flex-1 gradient-nature text-primary-foreground"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Save
-                  </>
-                )}
-              </Button>
+              <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="outline"
+                  onClick={handleCancel}
+                  className="w-full"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+              </motion.div>
+              <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={handleSave}
+                  className="w-full gradient-nature text-primary-foreground"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </motion.div>
             </div>
           ) : (
-            <Button
-              variant="outline"
-              onClick={handleEdit}
-              className="w-full"
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="outline"
+                onClick={handleEdit}
+                className="w-full"
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+            </motion.div>
           )}
           
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </motion.div>
         </div>
       </DialogContent>
     </Dialog>
@@ -268,14 +314,18 @@ interface ProfileFieldProps {
 
 function ProfileField({ icon, label, value }: ProfileFieldProps) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+    <motion.div 
+      className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-muted/50 rounded-lg"
+      whileHover={{ x: 4 }}
+      transition={{ type: 'spring', stiffness: 400 }}
+    >
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
         {icon}
       </div>
-      <div className="flex-1">
-        <p className="text-xs text-muted-foreground uppercase">{label}</p>
-        <p className="text-sm font-medium text-foreground">{value}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] sm:text-xs text-muted-foreground uppercase">{label}</p>
+        <p className="text-xs sm:text-sm font-medium text-foreground truncate">{value}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }

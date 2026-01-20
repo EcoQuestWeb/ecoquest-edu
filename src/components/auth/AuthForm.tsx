@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { motion } from 'framer-motion';
 import { Mail, Lock, User, School, MapPin, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,14 +131,24 @@ export function AuthForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <motion.div 
+      className="w-full max-w-md mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* Logo and Title */}
-      <div className="text-center mb-8 animate-fade-in-up">
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">🌱 EcoQuest</h1>
-        <p className="text-muted-foreground">
+      <motion.div 
+        className="text-center mb-6 sm:mb-8"
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">🌱 EcoQuest</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           {isSignUp ? 'Join the eco-warriors!' : 'Welcome back, eco-warrior!'}
         </p>
-      </div>
+      </motion.div>
 
       {/* Auth Toggle */}
       <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-6 animate-scale-in">
