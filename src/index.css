@@ -150,4 +150,106 @@
   .leaf-pattern {
     background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-8 0-15 12-15 25s7 25 15 25 15-12 15-25S38 5 30 5z' fill='%2322c55e' fill-opacity='0.05'/%3E%3C/svg%3E");
   }
+
+  /* Runner-style animations */
+  @keyframes float-up {
+    from {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(-100vh);
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+    50% {
+      box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.4);
+    }
+  }
+
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes slide-right {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes coin-spin {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+
+  .animate-float-up {
+    animation: float-up 8s linear infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 1s ease-in-out infinite;
+  }
+
+  .animate-slide-right {
+    animation: slide-right 20s linear infinite;
+  }
+
+  .animate-coin-spin {
+    animation: coin-spin 1s linear infinite;
+  }
+
+  /* Success flash animation */
+  @keyframes success-flash {
+    0% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: rgba(34, 197, 94, 0.2);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .animate-success-flash {
+    animation: success-flash 0.5s ease-out;
+  }
+
+  /* Error shake animation */
+  @keyframes error-shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    20%, 60% {
+      transform: translateX(-5px);
+    }
+    40%, 80% {
+      transform: translateX(5px);
+    }
+  }
+
+  .animate-error-shake {
+    animation: error-shake 0.4s ease-out;
+  }
 }
