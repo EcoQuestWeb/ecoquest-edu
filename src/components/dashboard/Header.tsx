@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, BarChart3, Crown } from 'lucide-react';
+import { BarChart3, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileModal } from './ProfileModal';
 import { PointsCounter } from '@/components/animations';
-import { RunningAvatar } from '@/components/runner';
 
 export function Header() {
   const { profile } = useAuth();
@@ -17,17 +16,20 @@ export function Header() {
   const isActive = (path: string) => location.pathname === path;
   const isDashboard = location.pathname === '/';
 
+  // Gender-based avatar emoji
+  const avatarEmoji = profile?.gender === 'female' ? '👩' : '👨';
+
   return (
     <>
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="bg-card/95 backdrop-blur-md border-b border-border sticky top-0 z-40 shadow-sm"
+        className="bg-card/95 backdrop-blur-md border-b border-border fixed top-0 left-0 right-0 z-50 shadow-sm"
       >
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between">
-            {/* Logo with runner feel */}
+            {/* Logo */}
             <motion.button 
               onClick={() => navigate('/')} 
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -42,13 +44,6 @@ export function Header() {
                 🌱
               </motion.span>
               <span className="font-display font-bold text-lg sm:text-xl text-foreground">EcoQuest</span>
-              <motion.span
-                className="hidden sm:inline-block text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                Run for Earth!
-              </motion.span>
             </motion.button>
 
             {/* Right side - User info & actions */}
@@ -57,17 +52,6 @@ export function Header() {
               <motion.div 
                 className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-eco-sun/30 to-eco-sun/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-eco-sun/30"
                 whileHover={{ scale: 1.05 }}
-                animate={{
-                  boxShadow: [
-                    '0 0 0 0 rgba(251, 191, 36, 0)',
-                    '0 0 10px 2px rgba(251, 191, 36, 0.3)',
-                    '0 0 0 0 rgba(251, 191, 36, 0)',
-                  ],
-                }}
-                transition={{ 
-                  boxShadow: { duration: 2, repeat: Infinity },
-                  scale: { type: 'spring', stiffness: 400 }
-                }}
               >
                 <motion.span
                   className="text-lg"
@@ -125,7 +109,7 @@ export function Header() {
                 </Button>
               </motion.div>
 
-              {/* Avatar - Only on dashboard - Running style */}
+              {/* Avatar - Gender-based cartoon */}
               {isDashboard && profile && (
                 <motion.button
                   onClick={() => setShowProfileModal(true)}
@@ -135,7 +119,7 @@ export function Header() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full gradient-nature flex items-center justify-center shadow-md">
-                    <RunningAvatar size="sm" isRunning={false} />
+                    <span className="text-lg sm:text-xl">{avatarEmoji}</span>
                   </div>
                   {/* Online indicator */}
                   <motion.div

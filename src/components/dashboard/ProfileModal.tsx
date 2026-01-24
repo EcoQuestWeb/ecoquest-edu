@@ -22,6 +22,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PointsCounter } from '@/components/animations';
 
+// Class options matching AuthForm
+const CLASS_OPTIONS = [
+  { value: 0, label: 'Nursery' },
+  { value: 1, label: 'Class 1' },
+  { value: 2, label: 'Class 2' },
+  { value: 3, label: 'Class 3' },
+  { value: 4, label: 'Class 4' },
+  { value: 5, label: 'Class 5' },
+  { value: 6, label: 'Class 6' },
+  { value: 7, label: 'Class 7' },
+  { value: 8, label: 'Class 8' },
+  { value: 9, label: 'Class 9' },
+  { value: 10, label: 'Class 10' },
+  { value: 11, label: 'Others (College/Above)' },
+];
+
 interface ProfileModalProps {
   open: boolean;
   onClose: () => void;
@@ -96,6 +112,15 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
 
   if (!profile) return null;
 
+  // Gender-based avatar emoji
+  const avatarEmoji = (isEditing ? editedData.gender : profile.gender) === 'female' ? '👩' : '👨';
+
+  // Get display label for class
+  const getClassLabel = (classNum: number) => {
+    const option = CLASS_OPTIONS.find(o => o.value === classNum);
+    return option ? option.label : `Class ${classNum}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="w-[95vw] max-w-md mx-auto bg-card border-border max-h-[90vh] overflow-y-auto">
@@ -110,18 +135,14 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
             <X className="w-5 h-5 text-muted-foreground" />
           </motion.button>
           <div className="flex flex-col items-center pt-2">
-            {/* Avatar - Shows edited gender in edit mode */}
+            {/* Avatar - Gender-based */}
             <motion.div 
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-full gradient-nature flex items-center justify-center mb-3 shadow-glow"
               initial={{ scale: 0 }}
               animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
             >
-              {(isEditing ? editedData.gender : profile.gender) === 'female' ? (
-                <span className="text-3xl sm:text-4xl">👩</span>
-              ) : (
-                <span className="text-3xl sm:text-4xl">👨</span>
-              )}
+              <span className="text-3xl sm:text-4xl">{avatarEmoji}</span>
             </motion.div>
             <DialogTitle className="font-display text-lg sm:text-xl text-foreground">
               {isEditing ? 'Edit Profile' : profile.name}
@@ -197,10 +218,10 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
                       <SelectTrigger className="bg-muted/50">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                          <SelectItem key={num} value={num.toString()}>
-                            Class {num}
+                      <SelectContent className="bg-popover max-h-60">
+                        {CLASS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -238,7 +259,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
                 >
                   <ProfileField icon={<User className="w-4 h-4" />} label="Name" value={profile.name} />
                   <ProfileField icon={<School className="w-4 h-4" />} label="College / School" value={profile.institution} />
-                  <ProfileField icon={<Calendar className="w-4 h-4" />} label="Class" value={`Class ${profile.class}`} />
+                  <ProfileField icon={<Calendar className="w-4 h-4" />} label="Class" value={getClassLabel(profile.class)} />
                   <ProfileField icon={<User className="w-4 h-4" />} label="Gender" value={profile.gender === 'female' ? 'Female' : 'Male'} />
                   <ProfileField icon={<MapPin className="w-4 h-4" />} label="State" value={profile.state} />
                   <ProfileField icon={<Globe className="w-4 h-4" />} label="Country" value={profile.country} />

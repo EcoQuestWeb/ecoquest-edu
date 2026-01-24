@@ -18,8 +18,25 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Class options: Nursery (0), Class 1-9, Class 10, Others (11)
+const CLASS_OPTIONS = [
+  { value: '0', label: 'Nursery' },
+  { value: '1', label: 'Class 1' },
+  { value: '2', label: 'Class 2' },
+  { value: '3', label: 'Class 3' },
+  { value: '4', label: 'Class 4' },
+  { value: '5', label: 'Class 5' },
+  { value: '6', label: 'Class 6' },
+  { value: '7', label: 'Class 7' },
+  { value: '8', label: 'Class 8' },
+  { value: '9', label: 'Class 9' },
+  { value: '10', label: 'Class 10' },
+  { value: '11', label: 'Others (College/Above)' },
+];
+
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  username: z.string().min(3, 'Username must be at least 3 characters').max(50).optional(),
   institution: z.string().min(2, 'Institution name is required').max(200),
   classLevel: z.string().min(1, 'Please select your class'),
   gender: z.string().min(1, 'Please select your gender'),
@@ -28,18 +45,19 @@ const signUpSchema = z.object({
   country: z.string().min(2, 'Country is required').max(100),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 }).refine((data) => {
+  // Email required only for "Others" (class 11)
   const classNum = parseInt(data.classLevel);
-  if (classNum >= 10 && (!data.email || data.email === '')) {
+  if (classNum === 11 && (!data.email || data.email === '')) {
     return false;
   }
   return true;
 }, {
-  message: 'Email is required for class 10 and above',
+  message: 'Email is required for College/Others',
   path: ['email'],
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().min(1, 'Username or email is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -56,6 +74,7 @@ export function AuthForm() {
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       name: '',
+      username: '',
       institution: '',
       classLevel: '',
       gender: '',
@@ -75,12 +94,14 @@ export function AuthForm() {
   });
 
   const classLevel = signUpForm.watch('classLevel');
-  const showEmailField = parseInt(classLevel) >= 10;
+  const classNum = parseInt(classLevel) || 0;
+  // Show email only for "Others" (class 11)
+  const showEmailField = classNum === 11;
 
   const handleSignUp = async (data: SignUpForm) => {
     setIsLoading(true);
     try {
-      // For younger students, generate a placeholder email for auth
+      // For non-Others students, generate a placeholder email for auth
       const authEmail = showEmailField && data.email 
         ? data.email 
         : `${data.name.toLowerCase().replace(/\s+/g, '')}_${Date.now()}@ecoquest.student`;
@@ -132,29 +153,29 @@ export function AuthForm() {
 
   return (
     <motion.div 
-      className="w-full max-w-md mx-auto"
+      className="w-full max-w-2xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Logo and Title */}
       <motion.div 
-        className="text-center mb-6 sm:mb-8"
+        className="text-center mb-4 sm:mb-6"
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">🌱 EcoQuest</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-1">🌱 EcoQuest</h1>
+        <p className="text-sm text-muted-foreground">
           {isSignUp ? 'Join the eco-warriors!' : 'Welcome back, eco-warrior!'}
         </p>
       </motion.div>
 
       {/* Auth Toggle */}
-      <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-6 animate-scale-in">
+      <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-4 animate-scale-in max-w-xs mx-auto">
         <button
           onClick={() => setIsSignUp(true)}
-          className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+          className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all duration-300 text-sm ${
             isSignUp
               ? 'bg-card shadow-soft text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -164,7 +185,7 @@ export function AuthForm() {
         </button>
         <button
           onClick={() => setIsSignUp(false)}
-          className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+          className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all duration-300 text-sm ${
             !isSignUp
               ? 'bg-card shadow-soft text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -177,205 +198,208 @@ export function AuthForm() {
       {/* Forms */}
       <div className="eco-card animate-scale-in">
         {isSignUp ? (
-          <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Full Name
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  placeholder="Enter your name"
-                  className="pl-10"
-                  {...signUpForm.register('name')}
-                />
-              </div>
-              {signUpForm.formState.errors.name && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.name.message}</p>
-              )}
-            </div>
-
-            {/* Institution */}
-            <div className="space-y-2">
-              <Label htmlFor="institution" className="text-sm font-medium">
-                School / College
-              </Label>
-              <div className="relative">
-                <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="institution"
-                  placeholder="Enter your school or college"
-                  className="pl-10"
-                  {...signUpForm.register('institution')}
-                />
-              </div>
-              {signUpForm.formState.errors.institution && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.institution.message}</p>
-              )}
-            </div>
-
-            {/* Class */}
-            <div className="space-y-2">
-              <Label htmlFor="class" className="text-sm font-medium">
-                Class
-              </Label>
-              <Select
-                value={signUpForm.watch('classLevel')}
-                onValueChange={(value) => signUpForm.setValue('classLevel', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select your class" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      Class {num}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {signUpForm.formState.errors.classLevel && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.classLevel.message}</p>
-              )}
-            </div>
-
-            {/* Gender */}
-            <div className="space-y-2">
-              <Label htmlFor="gender" className="text-sm font-medium">
-                Gender <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={signUpForm.watch('gender')}
-                onValueChange={(value) => signUpForm.setValue('gender', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select your gender" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-              {signUpForm.formState.errors.gender && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.gender.message}</p>
-              )}
-            </div>
-
-            {/* Email - Only for class 10+ */}
-            {showEmailField && (
-              <div className="space-y-2 animate-fade-in-up">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email <span className="text-destructive">*</span>
+          <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-3">
+            {/* 2-column layout on desktop, stacked on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Name */}
+              <div className="space-y-1">
+                <Label htmlFor="name" className="text-xs font-medium">
+                  Full Name
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    className="pl-10"
-                    {...signUpForm.register('email')}
+                    id="name"
+                    placeholder="Enter your name"
+                    className="pl-10 h-9 text-sm"
+                    {...signUpForm.register('name')}
                   />
                 </div>
-                {signUpForm.formState.errors.email && (
-                  <p className="text-sm text-destructive">{signUpForm.formState.errors.email.message}</p>
+                {signUpForm.formState.errors.name && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.name.message}</p>
                 )}
               </div>
-            )}
 
-            {/* State */}
-            <div className="space-y-2">
-              <Label htmlFor="state" className="text-sm font-medium">
-                State
-              </Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="state"
-                  placeholder="Enter your state"
-                  className="pl-10"
-                  {...signUpForm.register('state')}
-                />
+              {/* Institution */}
+              <div className="space-y-1">
+                <Label htmlFor="institution" className="text-xs font-medium">
+                  School / College
+                </Label>
+                <div className="relative">
+                  <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="institution"
+                    placeholder="Enter your school"
+                    className="pl-10 h-9 text-sm"
+                    {...signUpForm.register('institution')}
+                  />
+                </div>
+                {signUpForm.formState.errors.institution && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.institution.message}</p>
+                )}
               </div>
-              {signUpForm.formState.errors.state && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.state.message}</p>
-              )}
-            </div>
 
-            {/* Country */}
-            <div className="space-y-2">
-              <Label htmlFor="country" className="text-sm font-medium">
-                Country
-              </Label>
-              <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="country"
-                  placeholder="Enter your country"
-                  className="pl-10"
-                  {...signUpForm.register('country')}
-                />
+              {/* Class */}
+              <div className="space-y-1">
+                <Label htmlFor="class" className="text-xs font-medium">
+                  Class
+                </Label>
+                <Select
+                  value={signUpForm.watch('classLevel')}
+                  onValueChange={(value) => signUpForm.setValue('classLevel', value)}
+                >
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover max-h-60">
+                    {CLASS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {signUpForm.formState.errors.classLevel && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.classLevel.message}</p>
+                )}
               </div>
-              {signUpForm.formState.errors.country && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.country.message}</p>
-              )}
-            </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  className="pl-10"
-                  {...signUpForm.register('password')}
-                />
+              {/* Gender */}
+              <div className="space-y-1">
+                <Label htmlFor="gender" className="text-xs font-medium">
+                  Gender
+                </Label>
+                <Select
+                  value={signUpForm.watch('gender')}
+                  onValueChange={(value) => signUpForm.setValue('gender', value)}
+                >
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                {signUpForm.formState.errors.gender && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.gender.message}</p>
+                )}
               </div>
-              {signUpForm.formState.errors.password && (
-                <p className="text-sm text-destructive">{signUpForm.formState.errors.password.message}</p>
+
+              {/* State */}
+              <div className="space-y-1">
+                <Label htmlFor="state" className="text-xs font-medium">
+                  State
+                </Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="state"
+                    placeholder="Enter your state"
+                    className="pl-10 h-9 text-sm"
+                    {...signUpForm.register('state')}
+                  />
+                </div>
+                {signUpForm.formState.errors.state && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.state.message}</p>
+                )}
+              </div>
+
+              {/* Country */}
+              <div className="space-y-1">
+                <Label htmlFor="country" className="text-xs font-medium">
+                  Country
+                </Label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="country"
+                    placeholder="Enter your country"
+                    className="pl-10 h-9 text-sm"
+                    {...signUpForm.register('country')}
+                  />
+                </div>
+                {signUpForm.formState.errors.country && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.country.message}</p>
+                )}
+              </div>
+
+              {/* Email - Only for Others */}
+              {showEmailField && (
+                <div className="space-y-1 animate-fade-in-up">
+                  <Label htmlFor="email" className="text-xs font-medium">
+                    Email <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      className="pl-10 h-9 text-sm"
+                      {...signUpForm.register('email')}
+                    />
+                  </div>
+                  {signUpForm.formState.errors.email && (
+                    <p className="text-xs text-destructive">{signUpForm.formState.errors.email.message}</p>
+                  )}
+                </div>
               )}
+
+              {/* Password */}
+              <div className="space-y-1">
+                <Label htmlFor="password" className="text-xs font-medium">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Create a password"
+                    className="pl-10 h-9 text-sm"
+                    {...signUpForm.register('password')}
+                  />
+                </div>
+                {signUpForm.formState.errors.password && (
+                  <p className="text-xs text-destructive">{signUpForm.formState.errors.password.message}</p>
+                )}
+              </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full gradient-nature hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-6 rounded-xl"
+              className="w-full gradient-nature hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-5 rounded-xl"
               disabled={isLoading}
             >
               {isLoading ? 'Creating account...' : 'Join EcoQuest 🌱'}
             </Button>
           </form>
         ) : (
-          <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="signin-email" className="text-sm font-medium">
-                Email
+          <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-3 max-w-sm mx-auto">
+            {/* Email/Username */}
+            <div className="space-y-1">
+              <Label htmlFor="signin-email" className="text-xs font-medium">
+                Email or Username
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="signin-email"
-                  type="email"
+                  type="text"
                   placeholder="Enter your email"
-                  className="pl-10"
+                  className="pl-10 h-9 text-sm"
                   {...signInForm.register('email')}
                 />
               </div>
               {signInForm.formState.errors.email && (
-                <p className="text-sm text-destructive">{signInForm.formState.errors.email.message}</p>
+                <p className="text-xs text-destructive">{signInForm.formState.errors.email.message}</p>
               )}
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="signin-password" className="text-sm font-medium">
+            <div className="space-y-1">
+              <Label htmlFor="signin-password" className="text-xs font-medium">
                 Password
               </Label>
               <div className="relative">
@@ -384,18 +408,18 @@ export function AuthForm() {
                   id="signin-password"
                   type="password"
                   placeholder="Enter your password"
-                  className="pl-10"
+                  className="pl-10 h-9 text-sm"
                   {...signInForm.register('password')}
                 />
               </div>
               {signInForm.formState.errors.password && (
-                <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>
+                <p className="text-xs text-destructive">{signInForm.formState.errors.password.message}</p>
               )}
             </div>
 
             <Button
               type="submit"
-              className="w-full gradient-nature hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-6 rounded-xl"
+              className="w-full gradient-nature hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-5 rounded-xl"
               disabled={isLoading}
             >
               {isLoading ? 'Signing in...' : 'Sign In 🌿'}
@@ -405,7 +429,7 @@ export function AuthForm() {
       </div>
 
       {/* Footer */}
-      <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in-up">
+      <p className="text-center text-sm text-muted-foreground mt-4 animate-fade-in-up">
         {isSignUp
           ? 'Already have an account? '
           : "Don't have an account? "}
@@ -415,7 +439,7 @@ export function AuthForm() {
         >
           {isSignUp ? 'Sign In' : 'Sign Up'}
         </button>
-    </p>
+      </p>
     </motion.div>
   );
 }

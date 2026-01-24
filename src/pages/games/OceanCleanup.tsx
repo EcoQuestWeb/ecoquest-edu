@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 import { useLevelProgress } from '@/contexts/LevelProgressContext';
-import { GameMascot, PlantGrowth, LevelSelector, LevelUnlockAnimation } from '@/components/progression';
+import { PlantGrowth, LevelSelector, LevelUnlockAnimation } from '@/components/progression';
 import confetti from 'canvas-confetti';
 
 // Trash items that need to be collected
@@ -474,9 +474,9 @@ export default function OceanCleanup() {
               🤿
             </motion.div>
 
-            {/* Mascot */}
-            <div className="absolute bottom-2 left-2">
-              <GameMascot mood={mascotMood} size="sm" />
+            {/* Level indicator */}
+            <div className="absolute bottom-2 left-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1">
+              <span className="text-white text-xs font-medium">Level {selectedLevel}</span>
             </div>
 
             {/* Wave effect at bottom */}
@@ -507,7 +507,7 @@ export default function OceanCleanup() {
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-md mx-auto bg-white/10 backdrop-blur-md rounded-2xl p-6 text-center text-white"
           >
-            <GameMascot mood={gameState === 'won' ? 'celebrating' : 'sad'} size="lg" />
+            <div className="text-5xl mb-4">{gameState === 'won' ? '🎉' : '😢'}</div>
             
             <h2 className="font-display text-3xl font-bold mt-4 mb-2">
               {gameState === 'won' ? '🎉 Ocean Saved!' : '💔 Try Again!'}
