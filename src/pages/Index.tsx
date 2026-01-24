@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
 import { PageTransition } from '@/components/animations';
-import { RunnerBackground, RunningAvatar, GameCheckpoint } from '@/components/runner';
-import { GlobalStats, GameMascot } from '@/components/progression';
+import { FloatingEcoIcons } from '@/components/runner/RunnerBackground';
+import { GameCheckpoint } from '@/components/runner';
 
 const Index = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -28,18 +28,22 @@ const Index = () => {
 
   if (loading) {
     return (
-      <RunnerBackground>
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-          <RunningAvatar size="lg" isRunning={true} />
-          <motion.div 
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-primary font-display text-xl"
-          >
-            Loading your adventure...
-          </motion.div>
-        </div>
-      </RunnerBackground>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-eco-sky/20 via-background to-eco-leaf/10">
+        <motion.div 
+          className="text-5xl"
+          animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+          transition={{ rotate: { duration: 2, repeat: Infinity, ease: 'linear' }, scale: { duration: 1, repeat: Infinity } }}
+        >
+          🌱
+        </motion.div>
+        <motion.div 
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-primary font-display text-xl"
+        >
+          Loading your adventure...
+        </motion.div>
+      </div>
     );
   }
 
@@ -127,111 +131,79 @@ const Index = () => {
   }
 
   return (
-    <RunnerBackground>
-      <Header />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-eco-sky/20 via-background to-eco-leaf/10">
+      {/* Floating Eco Icons */}
+      <FloatingEcoIcons />
+      
+      <div className="relative z-10">
+        <Header />
 
-      <PageTransition>
-        <main className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-24 space-y-4 sm:space-y-6 max-w-4xl">
-          {/* Mascot with greeting */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-4 mb-2"
-          >
-            <GameMascot mood="running" size="md" showSpeech speechText="Let's save the planet! 🌍" />
-            <div className="flex-1">
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="text-sm text-muted-foreground"
-              >
-                Keep running, eco-warrior!
-              </motion.p>
-            </div>
-          </motion.div>
-
-          {/* User Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <UserStats />
-          </motion.div>
-
-          {/* Global Stats with Plant Growth */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <GlobalStats />
-          </motion.div>
-
-          {/* Games Section - Runner Track Style */}
-          <section className="relative">
-            {/* Track line */}
+        <PageTransition>
+          <main className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-8 space-y-4 sm:space-y-6 max-w-4xl">
+            {/* User Stats */}
             <motion.div
-              className="absolute left-4 sm:left-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-eco-leaf via-eco-sky to-eco-sun opacity-30"
-              initial={{ scaleY: 0, originY: 0 }}
-              animate={{ scaleY: 1 }}
-              transition={{ duration: 1, delay: 0.3 }}
-            />
-
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="flex items-center gap-2 mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <motion.span
-                className="text-2xl"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                🏁
-              </motion.span>
-              <h2 className="font-display font-bold text-lg sm:text-xl text-foreground">
-                Eco Checkpoints
-              </h2>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                ({games.length} challenges ahead)
-              </span>
+              <UserStats />
             </motion.div>
 
-            <div className="space-y-3 sm:space-y-4">
-              {games.map((game, index) => (
-                <GameCheckpoint
-                  key={game.path}
-                  {...game}
-                  index={index}
-                />
-              ))}
-            </div>
-          </section>
+            {/* Games Section */}
+            <section className="relative">
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="flex items-center gap-2 mb-4"
+              >
+                <motion.span
+                  className="text-2xl"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  🎮
+                </motion.span>
+                <h2 className="font-display font-bold text-lg sm:text-xl text-foreground">
+                  Eco Games
+                </h2>
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  ({games.length} games available)
+                </span>
+              </motion.div>
 
-          {/* Motivational Footer */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1 }}
-            className="text-center py-4 sm:py-6"
-          >
-            <motion.p 
-              className="text-muted-foreground text-xs sm:text-sm flex items-center justify-center gap-2"
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {games.map((game, index) => (
+                  <GameCheckpoint
+                    key={game.path}
+                    {...game}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* Motivational Footer */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1 }}
+              className="text-center py-4 sm:py-6"
             >
-              <span>🏃</span>
-              <span>Complete levels to grow your plants into mighty trees!</span>
-              <span>🌳</span>
-            </motion.p>
-          </motion.div>
-        </main>
-      </PageTransition>
-    </RunnerBackground>
+              <motion.p 
+                className="text-muted-foreground text-xs sm:text-sm flex items-center justify-center gap-2"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <span>🌱</span>
+                <span>Play games and grow your environmental knowledge!</span>
+                <span>🌳</span>
+              </motion.p>
+            </motion.div>
+          </main>
+        </PageTransition>
+      </div>
+    </div>
   );
 };
 
