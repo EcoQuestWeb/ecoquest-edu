@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap, Waves } from 'lucide-react';
+import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap, Waves, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
@@ -63,11 +63,39 @@ const Index = () => {
     color: GameColor;
   }> = [
     {
-      title: "Ocean Cleanup Runner 🌊",
-      description: "Help clean the ocean! Collect floating trash while avoiding obstacles and learn about marine pollution!",
+      title: "Waste Sorting ♻️",
+      description: "Sort items into the correct recycling bins. 5 levels to master!",
+      icon: <Recycle className="w-6 h-6 sm:w-7 sm:h-7 text-eco-leaf" />,
+      path: "/games/waste-sorting",
+      color: "green",
+    },
+    {
+      title: "Eco Wordle 🔤",
+      description: "Guess the hidden eco-word! Fewer guesses in harder levels.",
+      icon: <Type className="w-6 h-6 sm:w-7 sm:h-7 text-eco-earth" />,
+      path: "/games/eco-wordle",
+      color: "orange",
+    },
+    {
+      title: "Ocean Cleanup 🌊",
+      description: "Clean the ocean! Collect trash while avoiding obstacles.",
       icon: <Waves className="w-6 h-6 sm:w-7 sm:h-7 text-blue-400" />,
       path: "/games/ocean-cleanup",
       color: "blue",
+    },
+    {
+      title: "Trash Shooter 🎯",
+      description: "Shoot falling trash! Avoid hazardous waste for bonus points.",
+      icon: <Target className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" />,
+      path: "/games/trash-shooter",
+      color: "orange",
+    },
+    {
+      title: "Carbon Footprint 🌍",
+      description: "Discover your environmental impact through 5 quiz levels!",
+      icon: <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-teal-500" />,
+      path: "/games/carbon-footprint",
+      color: "teal",
     },
     {
       title: "Waste Sorting Game",

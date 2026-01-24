@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trophy, Gamepad2, TrendingUp, Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap } from 'lucide-react';
+import { ArrowLeft, Trophy, Gamepad2, TrendingUp, Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap, Target, Waves } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress, GameName } from '@/hooks/useGameProgress';
@@ -26,7 +26,8 @@ const GAME_INFO: Record<GameName, { name: string; icon: React.ReactNode; color: 
   'eco-match': { name: 'Eco Match', icon: <Sparkles className="w-5 h-5" />, color: 'text-pink-500' },
   'save-the-forest': { name: 'Save the Forest', icon: <TreePine className="w-5 h-5" />, color: 'text-green-600' },
   'rapid-eco-quiz': { name: 'Rapid Eco Quiz', icon: <Zap className="w-5 h-5" />, color: 'text-yellow-500' },
-  'ocean-cleanup': { name: 'Ocean Cleanup', icon: <Sparkles className="w-5 h-5" />, color: 'text-blue-400' },
+  'ocean-cleanup': { name: 'Ocean Cleanup', icon: <Waves className="w-5 h-5" />, color: 'text-blue-400' },
+  'trash-shooter': { name: 'Trash Shooter', icon: <Target className="w-5 h-5" />, color: 'text-orange-500' },
 };
 
 export default function Progress() {
