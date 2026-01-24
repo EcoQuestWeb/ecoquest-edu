@@ -1,16 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Type, RotateCcw, Delete } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
+import { useLevelProgress } from '@/contexts/LevelProgressContext';
+import { GameEntryScreen } from '@/components/progression/GameEntryScreen';
+import { LevelUnlockAnimation } from '@/components/progression/LevelUnlockAnimation';
 
-const ALL_ECO_WORDS = [
-  'EARTH', 'OCEAN', 'SOLAR', 'GREEN', 'OZONE', 'PLANT', 'WATER', 'TREES',
-  'CORAL', 'CLEAN', 'FAUNA', 'FLORA', 'BIOME', 'CYCLE', 'WASTE', 'REUSE',
-  'POLAR', 'ALGAE', 'RIVER', 'MARSH', 'CLOUD', 'WINDS', 'STORM', 'FROST',
-  'BLOOM', 'GRAIN', 'SEEDS', 'ROOTS', 'SHORE', 'CAVES', 'PEAKS', 'DELTA',
-];
+// Words organized by difficulty
+const WORDS_BY_LEVEL = {
+  1: ['EARTH', 'WATER', 'TREES', 'PLANT', 'GREEN', 'CLEAN', 'SOLAR', 'OCEAN'],
+  2: ['FLORA', 'FAUNA', 'CORAL', 'OZONE', 'BIOME', 'CYCLE', 'WASTE', 'REUSE'],
+  3: ['POLAR', 'ALGAE', 'RIVER', 'MARSH', 'CLOUD', 'WINDS', 'STORM', 'FROST'],
+  4: ['BLOOM', 'GRAIN', 'SEEDS', 'ROOTS', 'SHORE', 'CAVES', 'PEAKS', 'DELTA'],
+  5: ['HYDRO', 'FUNGI', 'XYLEM', 'PHYLA', 'GLADE', 'RAVINE', 'BASIN', 'CREST'],
+};
 
 const KEYBOARD_ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -19,6 +25,20 @@ const KEYBOARD_ROWS = [
 ];
 
 type LetterStatus = 'correct' | 'present' | 'absent' | 'empty';
+
+interface LevelConfig {
+  level: number;
+  maxGuesses: number;
+  words: string[];
+}
+
+const LEVEL_CONFIGS: LevelConfig[] = [
+  { level: 1, maxGuesses: 6, words: WORDS_BY_LEVEL[1] },
+  { level: 2, maxGuesses: 6, words: WORDS_BY_LEVEL[2] },
+  { level: 3, maxGuesses: 5, words: WORDS_BY_LEVEL[3] },
+  { level: 4, maxGuesses: 5, words: WORDS_BY_LEVEL[4] },
+  { level: 5, maxGuesses: 4, words: WORDS_BY_LEVEL[5] },
+];
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -33,17 +53,18 @@ export default function EcoWordle() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
+  const { completeLevel, isLevelUnlocked } = useLevelProgress();
 
-  // Content rotation - track used words
-  const usedWordsRef = useRef<Set<string>>(new Set());
-  const availableWordsRef = useRef<string[]>(shuffleArray([...ALL_ECO_WORDS]));
-
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'won' | 'lost'>('menu');
+  const [selectedLevel, setSelectedLevel] = useState(1);
   const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
-  const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [isSaving, setIsSaving] = useState(false);
   const [letterStatuses, setLetterStatuses] = useState<Record<string, LetterStatus>>({});
+  const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
+
+  const usedWordsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -51,42 +72,31 @@ export default function EcoWordle() {
     }
   }, [user, loading, navigate]);
 
-  const getNextWord = useCallback(() => {
-    let available = availableWordsRef.current.filter(
-      word => !usedWordsRef.current.has(word)
-    );
+  const getLevelConfig = () => LEVEL_CONFIGS[selectedLevel - 1] || LEVEL_CONFIGS[0];
+
+  const startGame = () => {
+    const config = getLevelConfig();
+    const available = config.words.filter(w => !usedWordsRef.current.has(w));
+    const shuffled = available.length > 0 ? shuffleArray(available) : shuffleArray([...config.words]);
     
-    // If not enough words, refill pool
-    if (available.length === 0) {
-      usedWordsRef.current.clear();
-      availableWordsRef.current = shuffleArray([...ALL_ECO_WORDS]);
-      available = availableWordsRef.current;
-    }
-    
-    const word = available[0];
+    const word = shuffled[0];
     usedWordsRef.current.add(word);
-    return word;
-  }, []);
-
-  useEffect(() => {
-    startNewGame();
-  }, []);
-
-  const startNewGame = () => {
-    setTargetWord(getNextWord());
+    
+    setTargetWord(word);
     setGuesses([]);
     setCurrentGuess('');
-    setGameState('playing');
     setLetterStatuses({});
+    setGameState('playing');
   };
 
-  const getLetterStatus = (letter: string, index: number, word: string): LetterStatus => {
+  const getLetterStatus = (letter: string, index: number): LetterStatus => {
     if (targetWord[index] === letter) return 'correct';
     if (targetWord.includes(letter)) return 'present';
     return 'absent';
   };
 
   const submitGuess = useCallback(async () => {
+    const config = getLevelConfig();
     if (currentGuess.length !== 5 || gameState !== 'playing') return;
 
     const newGuesses = [...guesses, currentGuess];
@@ -96,7 +106,7 @@ export default function EcoWordle() {
     const newStatuses = { ...letterStatuses };
     for (let i = 0; i < currentGuess.length; i++) {
       const letter = currentGuess[i];
-      const status = getLetterStatus(letter, i, currentGuess);
+      const status = getLetterStatus(letter, i);
       if (!newStatuses[letter] || status === 'correct' || (status === 'present' && newStatuses[letter] === 'absent')) {
         newStatuses[letter] = status;
       }
@@ -110,14 +120,19 @@ export default function EcoWordle() {
       setIsSaving(true);
       const pointsEarned = Math.max(5, 30 - (newGuesses.length - 1) * 5);
       await completeGame('eco-wordle', pointsEarned);
+      completeLevel('eco-wordle', selectedLevel, pointsEarned);
+      
+      if (selectedLevel < 5) {
+        setShowUnlockAnimation(true);
+      }
       setIsSaving(false);
-    } else if (newGuesses.length >= 6) {
+    } else if (newGuesses.length >= config.maxGuesses) {
       setGameState('lost');
       setIsSaving(true);
-      await completeGame('eco-wordle', 2); // Participation points
+      await completeGame('eco-wordle', 2);
       setIsSaving(false);
     }
-  }, [currentGuess, guesses, gameState, targetWord, letterStatuses, completeGame]);
+  }, [currentGuess, guesses, gameState, targetWord, letterStatuses, completeGame, selectedLevel, completeLevel]);
 
   const handleKeyPress = useCallback((key: string) => {
     if (gameState !== 'playing') return;
@@ -132,6 +147,8 @@ export default function EcoWordle() {
   }, [currentGuess, gameState, submitGuess]);
 
   useEffect(() => {
+    if (gameState !== 'playing') return;
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') handleKeyPress('ENTER');
       else if (e.key === 'Backspace') handleKeyPress('DEL');
@@ -140,7 +157,7 @@ export default function EcoWordle() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyPress]);
+  }, [handleKeyPress, gameState]);
 
   if (loading) {
     return (
@@ -150,9 +167,26 @@ export default function EcoWordle() {
     );
   }
 
+  if (gameState === 'menu') {
+    return (
+      <GameEntryScreen
+        gameName="eco-wordle"
+        gameTitle="Eco Wordle 🔤"
+        gameDescription="Guess the hidden eco-word!"
+        gameIcon={<Type className="w-6 h-6 text-eco-earth" />}
+        selectedLevel={selectedLevel}
+        onSelectLevel={setSelectedLevel}
+        onStartGame={startGame}
+        totalLevels={5}
+      />
+    );
+  }
+
+  const config = getLevelConfig();
+
   const renderGrid = () => {
     const rows = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < config.maxGuesses; i++) {
       const guess = guesses[i] || (i === guesses.length ? currentGuess : '');
       const isSubmitted = i < guesses.length;
       
@@ -163,21 +197,23 @@ export default function EcoWordle() {
             let bgColor = 'bg-card border-2 border-border';
             
             if (isSubmitted && letter) {
-              const status = getLetterStatus(letter, j, guess);
+              const status = getLetterStatus(letter, j);
               if (status === 'correct') bgColor = 'bg-eco-leaf text-white border-eco-leaf';
               else if (status === 'present') bgColor = 'bg-eco-sun text-eco-earth border-eco-sun';
               else bgColor = 'bg-muted-foreground/30 text-foreground border-muted-foreground/30';
             }
 
             return (
-              <div
+              <motion.div
                 key={j}
                 className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-lg ${bgColor} ${
-                  letter && !isSubmitted ? 'animate-scale-in border-primary' : ''
+                  letter && !isSubmitted ? 'border-primary' : ''
                 }`}
+                initial={letter && !isSubmitted ? { scale: 0.8 } : undefined}
+                animate={{ scale: 1 }}
               >
                 {letter}
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -196,22 +232,33 @@ export default function EcoWordle() {
 
   return (
     <div className="min-h-screen gradient-sky">
+      {/* Level Unlock Animation */}
+      <LevelUnlockAnimation
+        show={showUnlockAnimation}
+        level={selectedLevel + 1}
+        onComplete={() => setShowUnlockAnimation(false)}
+      />
+
       {/* Header */}
-      <header className="bg-card/95 backdrop-blur-md border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-card/95 backdrop-blur-md border-b border-border fixed top-0 left-0 right-0 z-50">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" onClick={() => setGameState('menu')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-display font-bold text-xl text-foreground">Eco Wordle</h1>
-              <p className="text-sm text-muted-foreground">Guess the eco-word!</p>
+              <h1 className="font-display font-bold text-lg sm:text-xl text-foreground">
+                Eco Wordle - Level {selectedLevel}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {config.maxGuesses} guesses allowed
+              </p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 pt-24 pb-6">
         <div className="max-w-sm mx-auto space-y-6">
           {/* Grid */}
           <div className="space-y-1.5 animate-fade-in-up">
@@ -219,12 +266,16 @@ export default function EcoWordle() {
           </div>
 
           {/* Game Over Message */}
-          {gameState !== 'playing' && (
-            <div className={`eco-card text-center animate-scale-in ${
-              gameState === 'won' ? 'border-eco-leaf' : 'border-destructive'
-            }`}>
+          {(gameState === 'won' || gameState === 'lost') && (
+            <motion.div 
+              className={`eco-card text-center ${
+                gameState === 'won' ? 'border-eco-leaf' : 'border-destructive'
+              }`}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            >
               <h2 className="font-display font-bold text-xl mb-2">
-                {gameState === 'won' ? '🎉 You Won!' : `The word was: ${targetWord}`}
+                {gameState === 'won' ? '🎉 Level Complete!' : `The word was: ${targetWord}`}
               </h2>
               
               <div className="bg-eco-sun/20 rounded-xl p-4 mb-4">
@@ -238,16 +289,16 @@ export default function EcoWordle() {
                 <p className="text-muted-foreground">Saving...</p>
               ) : (
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => navigate('/')} className="flex-1">
-                    Dashboard
+                  <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1">
+                    Back
                   </Button>
-                  <Button onClick={startNewGame} className="flex-1 gradient-nature text-primary-foreground">
+                  <Button onClick={startGame} className="flex-1 gradient-nature text-primary-foreground">
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    Play Again
+                    {gameState === 'won' ? 'Next' : 'Retry'}
                   </Button>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* Keyboard */}
