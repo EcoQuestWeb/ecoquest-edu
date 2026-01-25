@@ -1,65 +1,58 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trophy, Heart, Play, RotateCcw, Waves, Lock } from 'lucide-react';
+import { ArrowLeft, Trophy, Heart, Play, RotateCcw, Waves, Lock, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
 import { useLevelProgress } from '@/contexts/LevelProgressContext';
 import { PlantGrowth, LevelSelector, LevelUnlockAnimation } from '@/components/progression';
+import { useGameSounds } from '@/hooks/useGameSounds';
 import confetti from 'canvas-confetti';
 
-// Trash items that need to be collected
+// Trash items that fall from top
 const TRASH_TYPES = [
   { emoji: '🥤', name: 'Plastic Cup', points: 5 },
-  { emoji: '🧴', name: 'Plastic Bottle', points: 5 },
-  { emoji: '🛍️', name: 'Plastic Bag', points: 5 },
-  { emoji: '🥡', name: 'Food Container', points: 5 },
-  { emoji: '🍶', name: 'Oil Container', points: 10 },
-  { emoji: '🪣', name: 'Bucket', points: 10 },
-  { emoji: '📦', name: 'Cardboard', points: 5 },
-  { emoji: '🥫', name: 'Can', points: 5 },
+  { emoji: '🧴', name: 'Bottle', points: 5 },
+  { emoji: '🛍️', name: 'Bag', points: 5 },
+  { emoji: '🥡', name: 'Box', points: 5 },
+  { emoji: '📦', name: 'Cardboard', points: 10 },
+  { emoji: '🥫', name: 'Can', points: 10 },
+  { emoji: '👟', name: 'Shoe', points: 15 },
+  { emoji: '🎒', name: 'Backpack', points: 15 },
 ];
 
-// Obstacles to avoid
-const OBSTACLES = [
-  { emoji: '🦈', name: 'Shark' },
-  { emoji: '🪸', name: 'Coral' },
-  { emoji: '🪨', name: 'Rock' },
-  { emoji: '🦑', name: 'Squid' },
-];
+// Cute fish to avoid
+const FISH_TYPES = ['🐠', '🐟', '🐡', '🦈', '🐙', '🦑', '🦀', '🦐', '🐢', '🐬'];
 
-// Sea creatures (harmless, just for decoration)
-const SEA_LIFE = ['🐠', '🐟', '🐡', '🦀', '🐢', '🐙', '🦐', '🐚'];
-
-interface GameItem {
+interface FallingItem {
   id: number;
-  type: 'trash' | 'obstacle' | 'sealife';
+  type: 'trash' | 'fish';
   emoji: string;
-  name?: string;
   points?: number;
   x: number;
   y: number;
+  speed: number;
   collected: boolean;
-  hit: boolean;
+  dead: boolean;
 }
 
 interface LevelConfig {
   level: number;
-  targetItems: number;
-  speed: number;
+  targetTrash: number;
+  maxFishDeaths: number;
   spawnRate: number;
-  obstacleChance: number;
-  lives: number;
+  trashSpeed: number;
+  fishChance: number;
   timeLimit: number;
 }
 
 const LEVEL_CONFIGS: LevelConfig[] = [
-  { level: 1, targetItems: 10, speed: 3, spawnRate: 1500, obstacleChance: 0.1, lives: 3, timeLimit: 60 },
-  { level: 2, targetItems: 15, speed: 4, spawnRate: 1200, obstacleChance: 0.2, lives: 3, timeLimit: 55 },
-  { level: 3, targetItems: 20, speed: 5, spawnRate: 1000, obstacleChance: 0.25, lives: 3, timeLimit: 50 },
-  { level: 4, targetItems: 25, speed: 6, spawnRate: 800, obstacleChance: 0.3, lives: 3, timeLimit: 45 },
-  { level: 5, targetItems: 30, speed: 7, spawnRate: 700, obstacleChance: 0.35, lives: 3, timeLimit: 40 },
+  { level: 1, targetTrash: 15, maxFishDeaths: 50, spawnRate: 1200, trashSpeed: 2, fishChance: 0.3, timeLimit: 60 },
+  { level: 2, targetTrash: 20, maxFishDeaths: 45, spawnRate: 1000, trashSpeed: 2.5, fishChance: 0.35, timeLimit: 55 },
+  { level: 3, targetTrash: 25, maxFishDeaths: 40, spawnRate: 900, trashSpeed: 3, fishChance: 0.4, timeLimit: 50 },
+  { level: 4, targetTrash: 30, maxFishDeaths: 35, spawnRate: 800, trashSpeed: 3.5, fishChance: 0.45, timeLimit: 45 },
+  { level: 5, targetTrash: 40, maxFishDeaths: 30, spawnRate: 700, trashSpeed: 4, fishChance: 0.5, timeLimit: 45 },
 ];
 
 export default function OceanCleanup() {
@@ -67,18 +60,20 @@ export default function OceanCleanup() {
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
   const { getGameProgress, completeLevel, isLevelUnlocked } = useLevelProgress();
+  const { playSuccess, playError, playSplash, playFanfare, playPop } = useGameSounds();
 
   const [selectedLevel, setSelectedLevel] = useState(1);
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'won' | 'lost'>('menu');
-  const [playerX, setPlayerX] = useState(50);
-  const [items, setItems] = useState<GameItem[]>([]);
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'won' | 'lost'>('menu');
+  const [binX, setBinX] = useState(50);
+  const [items, setItems] = useState<FallingItem[]>([]);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [collected, setCollected] = useState(0);
+  const [trashCollected, setTrashCollected] = useState(0);
+  const [fishDeaths, setFishDeaths] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
-  const [mascotMood, setMascotMood] = useState<'running' | 'celebrating' | 'sad'>('running');
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSadFish, setShowSadFish] = useState<{ emoji: string, x: number } | null>(null);
 
   const itemIdRef = useRef(0);
   const gameAreaRef = useRef<HTMLDivElement>(null);
@@ -97,48 +92,21 @@ export default function OceanCleanup() {
     if (gameState !== 'playing') return;
 
     const interval = setInterval(() => {
-      const random = Math.random();
-      let newItem: GameItem;
-
-      if (random < levelConfig.obstacleChance) {
-        // Spawn obstacle
-        const obstacle = OBSTACLES[Math.floor(Math.random() * OBSTACLES.length)];
-        newItem = {
-          id: itemIdRef.current++,
-          type: 'obstacle',
-          emoji: obstacle.emoji,
-          name: obstacle.name,
-          x: Math.random() * 80 + 10,
-          y: -10,
-          collected: false,
-          hit: false,
-        };
-      } else if (random < levelConfig.obstacleChance + 0.15) {
-        // Spawn sea life (decoration)
-        newItem = {
-          id: itemIdRef.current++,
-          type: 'sealife',
-          emoji: SEA_LIFE[Math.floor(Math.random() * SEA_LIFE.length)],
-          x: Math.random() * 80 + 10,
-          y: -10,
-          collected: false,
-          hit: false,
-        };
-      } else {
-        // Spawn trash
-        const trash = TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)];
-        newItem = {
-          id: itemIdRef.current++,
-          type: 'trash',
-          emoji: trash.emoji,
-          name: trash.name,
-          points: trash.points,
-          x: Math.random() * 80 + 10,
-          y: -10,
-          collected: false,
-          hit: false,
-        };
-      }
+      const isFish = Math.random() < levelConfig.fishChance;
+      
+      const newItem: FallingItem = {
+        id: itemIdRef.current++,
+        type: isFish ? 'fish' : 'trash',
+        emoji: isFish 
+          ? FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)]
+          : TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)].emoji,
+        points: isFish ? 0 : TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)].points,
+        x: Math.random() * 80 + 10,
+        y: -10,
+        speed: levelConfig.trashSpeed + (Math.random() - 0.5),
+        collected: false,
+        dead: false,
+      };
 
       setItems(prev => [...prev, newItem]);
     }, levelConfig.spawnRate);
@@ -146,7 +114,7 @@ export default function OceanCleanup() {
     return () => clearInterval(interval);
   }, [gameState, levelConfig]);
 
-  // Move items down
+  // Move items and check collisions
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -154,58 +122,60 @@ export default function OceanCleanup() {
       setItems(prev => {
         const updated = prev.map(item => ({
           ...item,
-          y: item.y + levelConfig.speed,
+          y: item.y + item.speed,
         }));
 
-        // Check for collection/collision
+        // Check collisions with bin
         updated.forEach(item => {
-          if (item.collected || item.hit || item.y < 70 || item.y > 95) return;
+          if (item.collected || item.dead || item.y < 75 || item.y > 95) return;
 
-          const distance = Math.abs(item.x - playerX);
-          if (distance < 15) {
+          const distance = Math.abs(item.x - binX);
+          if (distance < 12) {
             if (item.type === 'trash') {
               item.collected = true;
               setScore(s => s + (item.points || 5));
-              setCollected(c => c + 1);
-              setMascotMood('celebrating');
-              setTimeout(() => setMascotMood('running'), 500);
-            } else if (item.type === 'obstacle') {
-              item.hit = true;
-              setLives(l => {
-                const newLives = l - 1;
-                if (newLives <= 0) {
+              setTrashCollected(c => c + 1);
+              if (soundEnabled) playPop();
+            } else {
+              // Hit a fish!
+              item.dead = true;
+              setFishDeaths(d => {
+                const newDeaths = d + 1;
+                if (newDeaths >= levelConfig.maxFishDeaths) {
                   setGameState('lost');
-                  setMascotMood('sad');
                 }
-                return newLives;
+                return newDeaths;
               });
-              setMascotMood('sad');
-              setTimeout(() => setMascotMood('running'), 1000);
+              if (soundEnabled) playError();
+              setShowSadFish({ emoji: item.emoji, x: item.x });
+              setTimeout(() => setShowSadFish(null), 1500);
             }
           }
         });
 
-        // Remove off-screen items
-        return updated.filter(item => item.y < 110);
+        return updated.filter(item => item.y < 110 && !item.collected);
       });
     }, 50);
 
     return () => clearInterval(interval);
-  }, [gameState, playerX, levelConfig.speed]);
+  }, [gameState, binX, levelConfig.maxFishDeaths, soundEnabled, playPop, playError]);
 
-  // Timer
+  // Timer and win condition
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
-          if (collected >= levelConfig.targetItems) {
+          if (trashCollected >= levelConfig.targetTrash) {
             setGameState('won');
-            setMascotMood('celebrating');
+            if (soundEnabled) {
+              playFanfare();
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
           } else {
             setGameState('lost');
-            setMascotMood('sad');
+            if (soundEnabled) playError();
           }
           return 0;
         }
@@ -213,30 +183,28 @@ export default function OceanCleanup() {
       });
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [gameState, collected, levelConfig.targetItems]);
+    return () => clearInterval(timer);
+  }, [gameState, trashCollected, levelConfig.targetTrash, soundEnabled, playFanfare, playError]);
 
-  // Check win condition
+  // Check win condition during play
   useEffect(() => {
-    if (gameState === 'playing' && collected >= levelConfig.targetItems) {
+    if (gameState === 'playing' && trashCollected >= levelConfig.targetTrash) {
       setGameState('won');
-      setMascotMood('celebrating');
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      if (soundEnabled) {
+        playFanfare();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
     }
-  }, [collected, levelConfig.targetItems, gameState]);
+  }, [trashCollected, levelConfig.targetTrash, gameState, soundEnabled, playFanfare]);
 
-  // Handle player movement
+  // Handle bin movement
   const handleMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (gameState !== 'playing' || !gameAreaRef.current) return;
 
     const rect = gameAreaRef.current.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const x = ((clientX - rect.left) / rect.width) * 100;
-    setPlayerX(Math.max(10, Math.min(90, x)));
+    setBinX(Math.max(10, Math.min(90, x)));
   }, [gameState]);
 
   const startGame = () => {
@@ -244,27 +212,22 @@ export default function OceanCleanup() {
 
     setGameState('playing');
     setScore(0);
-    setLives(levelConfig.lives);
-    setCollected(0);
+    setTrashCollected(0);
+    setFishDeaths(0);
     setTimeLeft(levelConfig.timeLimit);
     setItems([]);
-    setPlayerX(50);
-    setMascotMood('running');
+    setBinX(50);
+    itemIdRef.current = 0;
   };
 
   const finishGame = async () => {
     setIsSaving(true);
-    
-    // Points: base points + time bonus
-    const basePoints = score;
-    const timeBonus = Math.floor(timeLeft * 0.5);
-    const pointsEarned = basePoints + timeBonus;
+    const pointsEarned = score + Math.floor(timeLeft * 0.5);
 
     if (pointsEarned > 0) {
       await completeGame('ocean-cleanup', pointsEarned);
       completeLevel('ocean-cleanup', selectedLevel, pointsEarned);
       
-      // Check if next level unlocked
       if (selectedLevel < 5) {
         setShowUnlockAnimation(true);
       }
@@ -281,54 +244,117 @@ export default function OceanCleanup() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-blue-600">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-400 to-blue-600">
         <motion.div 
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-white font-display text-xl"
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-7xl"
         >
-          Loading Ocean Cleanup...
+          🌊
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-300 via-blue-500 to-blue-700 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-sky-300 via-blue-400 to-blue-800 overflow-hidden">
+      {/* Animated ocean background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Sun */}
+        <motion.div
+          className="absolute top-4 right-8 text-6xl"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 3, repeat: Infinity }}
+        >
+          ☀️
+        </motion.div>
+        
+        {/* Swimming fish in background */}
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={`bg-fish-${i}`}
+            className="absolute text-3xl opacity-40"
+            style={{ top: `${30 + Math.random() * 50}%` }}
+            animate={{ x: ['-10vw', '110vw'] }}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Infinity,
+              ease: 'linear',
+              delay: i * 3,
+            }}
+          >
+            {FISH_TYPES[i % FISH_TYPES.length]}
+          </motion.div>
+        ))}
+        
+        {/* Bubbles */}
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={`bubble-${i}`}
+            className="absolute w-4 h-4 bg-white/30 rounded-full"
+            style={{ left: `${5 + i * 6}%`, bottom: '-20px' }}
+            animate={{ 
+              y: [0, -800],
+              opacity: [0.6, 0],
+              scale: [0.5, 1.5],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 4,
+              repeat: Infinity,
+              ease: 'easeOut',
+              delay: i * 0.5,
+            }}
+          />
+        ))}
+        
+        {/* Seaweed */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-around">
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={`seaweed-${i}`}
+              className="text-4xl"
+              animate={{ rotate: [-5, 5, -5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+            >
+              🌿
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-blue-800/80 backdrop-blur-md border-b border-blue-600 sticky top-0 z-40">
+      <header className="bg-blue-900/80 backdrop-blur-md border-b border-blue-600 fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => navigate('/')}
-                className="text-white hover:bg-blue-700"
+                onClick={() => gameState === 'playing' ? setGameState('menu') : navigate('/')}
+                className="text-white hover:bg-blue-700 rounded-full"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
                 <h1 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <Waves className="w-5 h-5" />
-                  Ocean Cleanup Runner
+                  🌊 Ocean Cleanup
                 </h1>
-                <p className="text-xs text-blue-200">Collect trash, save the ocean!</p>
+                <p className="text-xs text-blue-200">Save the ocean!</p>
               </div>
             </div>
             
             {gameState === 'playing' && (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 bg-blue-900/50 px-3 py-1 rounded-full">
-                  {Array.from({ length: levelConfig.lives }).map((_, i) => (
-                    <motion.span 
-                      key={i}
-                      animate={i < lives ? {} : { scale: 0 }}
-                      className="text-lg"
-                    >
-                      {i < lives ? '❤️' : '🖤'}
-                    </motion.span>
-                  ))}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="text-white hover:bg-blue-700 rounded-full"
+                >
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </Button>
+                <div className="bg-red-500/80 px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="text-white text-sm">🐟 {fishDeaths}/{levelConfig.maxFishDeaths}</span>
                 </div>
                 <div className="bg-blue-900/50 px-3 py-1 rounded-full">
                   <span className="text-white font-bold">⏱️ {timeLeft}s</span>
@@ -343,44 +369,47 @@ export default function OceanCleanup() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="h-screen pt-16">
         {gameState === 'menu' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-lg mx-auto space-y-6"
+            className="container mx-auto px-4 py-6 max-w-lg space-y-6 relative z-10"
           >
             {/* Game info card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-center text-white">
+            <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 text-center text-white">
               <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-6xl mb-4"
+                animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="text-7xl mb-4"
               >
-                🌊
+                🗑️
               </motion.div>
-              <h2 className="font-display text-2xl font-bold mb-2">Ocean Cleanup Runner</h2>
-              <p className="text-blue-100 mb-4">
-                Help clean the ocean! Collect floating trash 🥤🧴🛍️ while avoiding dangerous obstacles 🦈🪸
+              <h2 className="font-display text-2xl font-bold mb-2">Ocean Cleanup!</h2>
+              <p className="text-blue-100 mb-4 text-lg">
+                Move the bin to catch trash 🥤🧴<br/>
+                But don't hurt the fish! 🐠🐟
               </p>
               
-              {/* Marine pollution facts */}
-              <div className="bg-blue-900/30 rounded-xl p-4 text-left text-sm">
-                <p className="text-blue-200 font-medium mb-2">🌍 Did you know?</p>
-                <p className="text-blue-100">
-                  8 million tons of plastic enter our oceans every year. 
-                  By playing this game, you're learning to help protect marine life!
+              <div className="bg-blue-900/40 rounded-2xl p-4 text-left">
+                <p className="text-blue-200 font-bold mb-2 flex items-center gap-2">
+                  <span className="text-xl">💡</span> How to play:
                 </p>
+                <ul className="text-blue-100 space-y-1 text-sm">
+                  <li>• Move your finger/mouse to control the bin</li>
+                  <li>• Catch falling trash for points</li>
+                  <li>• If {levelConfig.maxFishDeaths}+ fish die, game over!</li>
+                </ul>
               </div>
             </div>
 
             {/* Plant progress */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4">
+              <div className="flex items-center justify-between">
                 <h3 className="text-white font-medium">Your Progress</h3>
                 <PlantGrowth stage={progress.plantStage} size="sm" />
               </div>
-              <div className="text-sm text-blue-200">
+              <div className="text-sm text-blue-200 mt-2">
                 Levels completed: {progress.levelsCompleted.length}/5
               </div>
             </div>
@@ -397,17 +426,17 @@ export default function OceanCleanup() {
               <Button 
                 onClick={startGame}
                 disabled={!isLevelUnlocked('ocean-cleanup', selectedLevel)}
-                className="w-full py-6 text-lg bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-lg"
+                className="w-full py-8 text-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-xl rounded-2xl"
               >
                 {isLevelUnlocked('ocean-cleanup', selectedLevel) ? (
                   <>
-                    <Play className="w-6 h-6 mr-2" />
-                    Start Level {selectedLevel}
+                    <Play className="w-8 h-8 mr-3" />
+                    Start Level {selectedLevel}!
                   </>
                 ) : (
                   <>
-                    <Lock className="w-6 h-6 mr-2" />
-                    Complete Level {selectedLevel - 1} First
+                    <Lock className="w-8 h-8 mr-3" />
+                    Complete Level {selectedLevel - 1}
                   </>
                 )}
               </Button>
@@ -418,44 +447,76 @@ export default function OceanCleanup() {
         {gameState === 'playing' && (
           <div 
             ref={gameAreaRef}
-            className="relative w-full max-w-lg mx-auto aspect-[3/4] bg-gradient-to-b from-blue-400/50 to-blue-800/50 rounded-2xl overflow-hidden touch-none cursor-pointer"
+            className="relative w-full h-full cursor-none"
             onMouseMove={handleMove}
             onTouchMove={handleMove}
+            onTouchStart={handleMove}
+            style={{ touchAction: 'none' }}
           >
             {/* Progress bar */}
-            <div className="absolute top-2 left-2 right-2 h-3 bg-blue-900/50 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-green-400 to-green-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${(collected / levelConfig.targetItems) * 100}%` }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
-                {collected}/{levelConfig.targetItems}
+            <div className="absolute top-4 left-4 right-4 z-30">
+              <div className="bg-blue-900/60 rounded-full p-1">
+                <div className="h-4 bg-blue-800/50 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(trashCollected / levelConfig.targetTrash) * 100}%` }}
+                  />
+                </div>
+                <div className="text-center text-white text-sm font-bold mt-1">
+                  🗑️ {trashCollected}/{levelConfig.targetTrash} trash collected
+                </div>
               </div>
             </div>
 
-            {/* Floating items */}
+            {/* Sad fish popup */}
+            <AnimatePresence>
+              {showSadFish && (
+                <motion.div
+                  className="absolute z-40 text-center"
+                  style={{ left: `${showSadFish.x}%`, top: '40%' }}
+                  initial={{ scale: 0, y: 0 }}
+                  animate={{ scale: 1.5, y: -50 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                >
+                  <div className="bg-red-500 text-white rounded-2xl p-3 shadow-xl">
+                    <span className="text-3xl">{showSadFish.emoji}</span>
+                    <p className="text-sm font-bold">Oh no! 💔</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Falling items */}
             <AnimatePresence>
               {items.map(item => (
                 <motion.div
                   key={item.id}
-                  className="absolute text-3xl pointer-events-none"
-                  style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                  className={`absolute text-4xl sm:text-5xl pointer-events-none ${
+                    item.type === 'fish' ? '' : 'drop-shadow-lg'
+                  }`}
+                  style={{ 
+                    left: `${item.x}%`, 
+                    top: `${item.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ 
-                    scale: item.collected || item.hit ? 0 : 1,
-                    rotate: 0,
-                    y: item.collected ? -50 : 0,
+                    scale: item.dead ? 0 : 1,
+                    rotate: item.type === 'fish' ? [0, 10, -10, 0] : 0,
                   }}
-                  exit={{ scale: 0 }}
-                  transition={{ type: 'spring', stiffness: 200 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ 
+                    scale: { duration: 0.2 },
+                    rotate: { duration: 1, repeat: Infinity },
+                  }}
                 >
                   {item.emoji}
                   {item.collected && (
                     <motion.span
-                      className="absolute -top-6 left-1/2 -translate-x-1/2 text-yellow-300 font-bold text-sm whitespace-nowrap"
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 text-yellow-300 font-bold text-lg whitespace-nowrap"
                       initial={{ opacity: 1, y: 0 }}
-                      animate={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 0, y: -30 }}
                     >
                       +{item.points}
                     </motion.span>
@@ -464,99 +525,85 @@ export default function OceanCleanup() {
               ))}
             </AnimatePresence>
 
-            {/* Player (diver/boat) */}
+            {/* Dustbin (player) */}
             <motion.div
-              className="absolute bottom-16 text-5xl"
-              style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}
+              className="absolute bottom-20 text-6xl sm:text-7xl"
+              style={{ 
+                left: `${binX}%`, 
+                transform: 'translateX(-50%)',
+              }}
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
-              🤿
+              🗑️
             </motion.div>
 
-            {/* Level indicator */}
-            <div className="absolute bottom-2 left-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1">
-              <span className="text-white text-xs font-medium">Level {selectedLevel}</span>
-            </div>
-
-            {/* Wave effect at bottom */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-blue-900/80 to-transparent"
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <div className="flex justify-around text-2xl opacity-50">
-                {'🌊'.repeat(8).split('').map((w, i) => (
-                  <motion.span 
-                    key={i}
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
-                  >
-                    {w}
-                  </motion.span>
-                ))}
-              </div>
-            </motion.div>
+            {/* Ocean floor */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-blue-900 to-transparent" />
           </div>
         )}
 
         {/* Win/Lose screens */}
         {(gameState === 'won' || gameState === 'lost') && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md mx-auto bg-white/10 backdrop-blur-md rounded-2xl p-6 text-center text-white"
-          >
-            <div className="text-5xl mb-4">{gameState === 'won' ? '🎉' : '😢'}</div>
-            
-            <h2 className="font-display text-3xl font-bold mt-4 mb-2">
-              {gameState === 'won' ? '🎉 Ocean Saved!' : '💔 Try Again!'}
-            </h2>
-            
-            <p className="text-blue-100 mb-4">
-              {gameState === 'won' 
-                ? `You collected ${collected} pieces of trash and helped clean the ocean!`
-                : `You collected ${collected}/${levelConfig.targetItems} items. Keep trying!`}
-            </p>
+          <div className="h-full flex items-center justify-center px-4 relative z-10">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+            >
+              <motion.div 
+                className="text-8xl mb-4"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: gameState === 'won' ? [0, -10, 10, 0] : 0,
+                }}
+                transition={{ duration: 0.5, repeat: gameState === 'won' ? 3 : 0 }}
+              >
+                {gameState === 'won' ? '🎉' : '😢'}
+              </motion.div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-blue-900/30 rounded-xl p-4">
-                <p className="text-sm text-blue-200">Score</p>
-                <p className="text-2xl font-bold">{score}</p>
-              </div>
-              <div className="bg-green-900/30 rounded-xl p-4">
-                <p className="text-sm text-green-200">Points Earned</p>
-                <p className="text-2xl font-bold">
-                  {gameState === 'won' ? score + Math.floor(timeLeft * 0.5) : 0}
-                </p>
-              </div>
-            </div>
+              <h2 className="font-display font-bold text-3xl text-gray-800 mb-2">
+                {gameState === 'won' ? 'Ocean Hero!' : 'Oh no!'}
+              </h2>
+              <p className="text-gray-600 mb-6 text-lg">
+                {gameState === 'won' 
+                  ? 'You cleaned up the ocean! 🌊✨' 
+                  : fishDeaths >= levelConfig.maxFishDeaths 
+                    ? 'Too many fish got hurt! 🐟💔'
+                    : `Collect ${levelConfig.targetTrash} trash to win!`
+                }
+              </p>
 
-            {isSaving ? (
-              <p className="text-blue-200">Saving progress...</p>
-            ) : (
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/')}
-                  className="flex-1 border-white/30 text-white hover:bg-white/10"
-                >
-                  Back to Dashboard
-                </Button>
-                <Button 
-                  onClick={() => setGameState('menu')}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-teal-500"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Play Again
-                </Button>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-green-100 rounded-2xl p-4">
+                  <p className="text-3xl font-bold text-green-600">{trashCollected}</p>
+                  <p className="text-sm text-green-700">🗑️ Trash</p>
+                </div>
+                <div className="bg-blue-100 rounded-2xl p-4">
+                  <p className="text-3xl font-bold text-blue-600">{score}</p>
+                  <p className="text-sm text-blue-700">⭐ Points</p>
+                </div>
               </div>
-            )}
-          </motion.div>
+
+              {isSaving ? (
+                <p className="text-gray-500">Saving... 🌊</p>
+              ) : (
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1 py-6 rounded-2xl">
+                    🏠 Menu
+                  </Button>
+                  <Button onClick={startGame} className="flex-1 py-6 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 text-white">
+                    <RotateCcw className="w-5 h-5 mr-2" />
+                    {gameState === 'won' ? 'Play Again!' : 'Try Again!'}
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </main>
 
-      {/* Level unlock animation */}
+      {/* Level Unlock Animation */}
       <LevelUnlockAnimation
         show={showUnlockAnimation}
         level={selectedLevel + 1}
