@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trophy, Heart, Play, RotateCcw, Waves, Lock, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Trophy, Heart, Play, RotateCcw, Waves, Lock, Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
@@ -22,18 +22,26 @@ const TRASH_TYPES = [
   { emoji: '🎒', name: 'Backpack', points: 15 },
 ];
 
-// Cute fish to avoid
+// Cute fish that swim horizontally
 const FISH_TYPES = ['🐠', '🐟', '🐡', '🦈', '🐙', '🦑', '🦀', '🦐', '🐢', '🐬'];
 
-interface FallingItem {
+interface FallingTrash {
   id: number;
-  type: 'trash' | 'fish';
   emoji: string;
-  points?: number;
+  points: number;
   x: number;
   y: number;
   speed: number;
   collected: boolean;
+}
+
+interface SwimmingFish {
+  id: number;
+  emoji: string;
+  x: number;
+  y: number;
+  speed: number;
+  direction: 'left' | 'right';
   dead: boolean;
 }
 
@@ -41,18 +49,19 @@ interface LevelConfig {
   level: number;
   targetTrash: number;
   maxFishDeaths: number;
-  spawnRate: number;
+  trashSpawnRate: number;
+  fishSpawnRate: number;
   trashSpeed: number;
-  fishChance: number;
+  fishSpeed: number;
   timeLimit: number;
 }
 
 const LEVEL_CONFIGS: LevelConfig[] = [
-  { level: 1, targetTrash: 15, maxFishDeaths: 50, spawnRate: 1200, trashSpeed: 2, fishChance: 0.3, timeLimit: 60 },
-  { level: 2, targetTrash: 20, maxFishDeaths: 45, spawnRate: 1000, trashSpeed: 2.5, fishChance: 0.35, timeLimit: 55 },
-  { level: 3, targetTrash: 25, maxFishDeaths: 40, spawnRate: 900, trashSpeed: 3, fishChance: 0.4, timeLimit: 50 },
-  { level: 4, targetTrash: 30, maxFishDeaths: 35, spawnRate: 800, trashSpeed: 3.5, fishChance: 0.45, timeLimit: 45 },
-  { level: 5, targetTrash: 40, maxFishDeaths: 30, spawnRate: 700, trashSpeed: 4, fishChance: 0.5, timeLimit: 45 },
+  { level: 1, targetTrash: 15, maxFishDeaths: 50, trashSpawnRate: 1200, fishSpawnRate: 2000, trashSpeed: 2, fishSpeed: 1.5, timeLimit: 60 },
+  { level: 2, targetTrash: 20, maxFishDeaths: 45, trashSpawnRate: 1000, fishSpawnRate: 1800, trashSpeed: 2.5, fishSpeed: 2, timeLimit: 55 },
+  { level: 3, targetTrash: 25, maxFishDeaths: 40, trashSpawnRate: 900, fishSpawnRate: 1500, trashSpeed: 3, fishSpeed: 2.5, timeLimit: 50 },
+  { level: 4, targetTrash: 30, maxFishDeaths: 35, trashSpawnRate: 800, fishSpawnRate: 1300, trashSpeed: 3.5, fishSpeed: 3, timeLimit: 45 },
+  { level: 5, targetTrash: 40, maxFishDeaths: 30, trashSpawnRate: 700, fishSpawnRate: 1000, trashSpeed: 4, fishSpeed: 3.5, timeLimit: 45 },
 ];
 
 export default function OceanCleanup() {
@@ -65,7 +74,9 @@ export default function OceanCleanup() {
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'won' | 'lost'>('menu');
   const [binX, setBinX] = useState(50);
-  const [items, setItems] = useState<FallingItem[]>([]);
+  const [binY, setBinY] = useState(80);
+  const [trashItems, setTrashItems] = useState<FallingTrash[]>([]);
+  const [fishItems, setFishItems] = useState<SwimmingFish[]>([]);
   const [score, setScore] = useState(0);
   const [trashCollected, setTrashCollected] = useState(0);
   const [fishDeaths, setFishDeaths] = useState(0);
@@ -73,7 +84,7 @@ export default function OceanCleanup() {
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSadFish, setShowSadFish] = useState<{ emoji: string, x: number } | null>(null);
+  const [showSadFish, setShowSadFish] = useState<{ emoji: string, x: number, y: number } | null>(null);
 
   const itemIdRef = useRef(0);
   const gameAreaRef = useRef<HTMLDivElement>(null);
@@ -87,78 +98,122 @@ export default function OceanCleanup() {
     }
   }, [user, loading, navigate]);
 
-  // Spawn items
+  // Spawn trash from top
   useEffect(() => {
     if (gameState !== 'playing') return;
 
     const interval = setInterval(() => {
-      const isFish = Math.random() < levelConfig.fishChance;
+      const trashType = TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)];
       
-      const newItem: FallingItem = {
+      const newTrash: FallingTrash = {
         id: itemIdRef.current++,
-        type: isFish ? 'fish' : 'trash',
-        emoji: isFish 
-          ? FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)]
-          : TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)].emoji,
-        points: isFish ? 0 : TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)].points,
+        emoji: trashType.emoji,
+        points: trashType.points,
         x: Math.random() * 80 + 10,
-        y: -10,
+        y: -5,
         speed: levelConfig.trashSpeed + (Math.random() - 0.5),
         collected: false,
-        dead: false,
       };
 
-      setItems(prev => [...prev, newItem]);
-    }, levelConfig.spawnRate);
+      setTrashItems(prev => [...prev, newTrash]);
+    }, levelConfig.trashSpawnRate);
 
     return () => clearInterval(interval);
   }, [gameState, levelConfig]);
 
-  // Move items and check collisions
+  // Spawn fish swimming horizontally
   useEffect(() => {
     if (gameState !== 'playing') return;
 
     const interval = setInterval(() => {
-      setItems(prev => {
-        const updated = prev.map(item => ({
-          ...item,
-          y: item.y + item.speed,
+      const direction = Math.random() > 0.5 ? 'left' : 'right';
+      const fishEmoji = FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)];
+      
+      const newFish: SwimmingFish = {
+        id: itemIdRef.current++,
+        emoji: fishEmoji,
+        x: direction === 'right' ? -10 : 110,
+        y: 30 + Math.random() * 50, // Swim in middle to lower area
+        speed: levelConfig.fishSpeed + (Math.random() - 0.5),
+        direction,
+        dead: false,
+      };
+
+      setFishItems(prev => [...prev, newFish]);
+    }, levelConfig.fishSpawnRate);
+
+    return () => clearInterval(interval);
+  }, [gameState, levelConfig]);
+
+  // Move trash down and fish horizontally
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    const interval = setInterval(() => {
+      // Move trash down
+      setTrashItems(prev => {
+        const updated = prev.map(trash => ({
+          ...trash,
+          y: trash.y + trash.speed,
         }));
 
-        // Check collisions with bin
-        updated.forEach(item => {
-          if (item.collected || item.dead || item.y < 75 || item.y > 95) return;
+        // Check collision with bin
+        updated.forEach(trash => {
+          if (trash.collected || trash.y < binY - 10 || trash.y > binY + 10) return;
 
-          const distance = Math.abs(item.x - binX);
+          const distance = Math.abs(trash.x - binX);
           if (distance < 12) {
-            if (item.type === 'trash') {
-              item.collected = true;
-              setScore(s => s + (item.points || 5));
-              setTrashCollected(c => c + 1);
-              if (soundEnabled) playPop();
-            } else {
-              // Hit a fish!
-              item.dead = true;
-              setFishDeaths(d => {
-                const newDeaths = d + 1;
-                if (newDeaths >= levelConfig.maxFishDeaths) {
-                  setGameState('lost');
-                }
-                return newDeaths;
-              });
-              if (soundEnabled) playError();
-              setShowSadFish({ emoji: item.emoji, x: item.x });
-              setTimeout(() => setShowSadFish(null), 1500);
-            }
+            trash.collected = true;
+            setScore(s => s + trash.points);
+            setTrashCollected(c => c + 1);
+            if (soundEnabled) playPop();
           }
         });
 
-        return updated.filter(item => item.y < 110 && !item.collected);
+        return updated.filter(trash => trash.y < 105 && !trash.collected);
+      });
+
+      // Move fish horizontally
+      setFishItems(prev => {
+        const updated = prev.map(fish => ({
+          ...fish,
+          x: fish.direction === 'right' ? fish.x + fish.speed : fish.x - fish.speed,
+        }));
+
+        // Check collision with bin
+        updated.forEach(fish => {
+          if (fish.dead) return;
+
+          const distanceX = Math.abs(fish.x - binX);
+          const distanceY = Math.abs(fish.y - binY);
+          
+          if (distanceX < 10 && distanceY < 10) {
+            fish.dead = true;
+            setFishDeaths(d => {
+              const newDeaths = d + 1;
+              if (newDeaths >= levelConfig.maxFishDeaths) {
+                setGameState('lost');
+              }
+              return newDeaths;
+            });
+            if (soundEnabled) playError();
+            setShowSadFish({ emoji: fish.emoji, x: fish.x, y: fish.y });
+            setTimeout(() => setShowSadFish(null), 1500);
+          }
+        });
+
+        // Remove fish that are off screen or dead
+        return updated.filter(fish => {
+          if (fish.dead) return false;
+          if (fish.direction === 'right' && fish.x > 110) return false;
+          if (fish.direction === 'left' && fish.x < -10) return false;
+          return true;
+        });
       });
     }, 50);
 
     return () => clearInterval(interval);
-  }, [gameState, binX, levelConfig.maxFishDeaths, soundEnabled, playPop, playError]);
+  }, [gameState, binX, binY, levelConfig.maxFishDeaths, soundEnabled, playPop, playError]);
 
   // Timer and win condition
   useEffect(() => {
@@ -197,14 +252,19 @@ export default function OceanCleanup() {
     }
   }, [trashCollected, levelConfig.targetTrash, gameState, soundEnabled, playFanfare]);
 
-  // Handle bin movement
+  // Handle bin movement - freely across the screen
   const handleMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (gameState !== 'playing' || !gameAreaRef.current) return;
 
     const rect = gameAreaRef.current.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
     const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    
     setBinX(Math.max(10, Math.min(90, x)));
+    setBinY(Math.max(30, Math.min(90, y)));
   }, [gameState]);
 
   const startGame = () => {
@@ -215,8 +275,10 @@ export default function OceanCleanup() {
     setTrashCollected(0);
     setFishDeaths(0);
     setTimeLeft(levelConfig.timeLimit);
-    setItems([]);
+    setTrashItems([]);
+    setFishItems([]);
     setBinX(50);
+    setBinY(80);
     itemIdRef.current = 0;
   };
 
@@ -234,6 +296,13 @@ export default function OceanCleanup() {
     }
     
     setIsSaving(false);
+  };
+
+  const goToNextLevel = () => {
+    if (selectedLevel < 5) {
+      setSelectedLevel(selectedLevel + 1);
+      startGame();
+    }
   };
 
   useEffect(() => {
@@ -268,24 +337,6 @@ export default function OceanCleanup() {
         >
           ☀️
         </motion.div>
-        
-        {/* Swimming fish in background */}
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={`bg-fish-${i}`}
-            className="absolute text-3xl opacity-40"
-            style={{ top: `${30 + Math.random() * 50}%` }}
-            animate={{ x: ['-10vw', '110vw'] }}
-            transition={{
-              duration: 20 + Math.random() * 10,
-              repeat: Infinity,
-              ease: 'linear',
-              delay: i * 3,
-            }}
-          >
-            {FISH_TYPES[i % FISH_TYPES.length]}
-          </motion.div>
-        ))}
         
         {/* Bubbles */}
         {[...Array(15)].map((_, i) => (
@@ -339,7 +390,7 @@ export default function OceanCleanup() {
                 <h1 className="font-display font-bold text-lg text-white flex items-center gap-2">
                   🌊 Ocean Cleanup
                 </h1>
-                <p className="text-xs text-blue-200">Save the ocean!</p>
+                <p className="text-xs text-blue-200">Level {selectedLevel} • Save the ocean!</p>
               </div>
             </div>
             
@@ -387,8 +438,8 @@ export default function OceanCleanup() {
               </motion.div>
               <h2 className="font-display text-2xl font-bold mb-2">Ocean Cleanup!</h2>
               <p className="text-blue-100 mb-4 text-lg">
-                Move the bin to catch trash 🥤🧴<br/>
-                But don't hurt the fish! 🐠🐟
+                Move the bin freely to catch trash 🥤🧴<br/>
+                Fish swim across - don't hit them! 🐠🐟
               </p>
               
               <div className="bg-blue-900/40 rounded-2xl p-4 text-left">
@@ -398,6 +449,7 @@ export default function OceanCleanup() {
                 <ul className="text-blue-100 space-y-1 text-sm">
                   <li>• Move your finger/mouse to control the bin</li>
                   <li>• Catch falling trash for points</li>
+                  <li>• Fish swim left ↔ right - avoid them!</li>
                   <li>• If {levelConfig.maxFishDeaths}+ fish die, game over!</li>
                 </ul>
               </div>
@@ -474,7 +526,7 @@ export default function OceanCleanup() {
               {showSadFish && (
                 <motion.div
                   className="absolute z-40 text-center"
-                  style={{ left: `${showSadFish.x}%`, top: '40%' }}
+                  style={{ left: `${showSadFish.x}%`, top: `${showSadFish.y}%` }}
                   initial={{ scale: 0, y: 0 }}
                   animate={{ scale: 1.5, y: -50 }}
                   exit={{ scale: 0, opacity: 0 }}
@@ -487,52 +539,70 @@ export default function OceanCleanup() {
               )}
             </AnimatePresence>
 
-            {/* Falling items */}
+            {/* Falling trash */}
             <AnimatePresence>
-              {items.map(item => (
+              {trashItems.map(trash => (
                 <motion.div
-                  key={item.id}
-                  className={`absolute text-4xl sm:text-5xl pointer-events-none ${
-                    item.type === 'fish' ? '' : 'drop-shadow-lg'
-                  }`}
+                  key={trash.id}
+                  className="absolute text-4xl sm:text-5xl pointer-events-none drop-shadow-lg"
                   style={{ 
-                    left: `${item.x}%`, 
-                    top: `${item.y}%`,
+                    left: `${trash.x}%`, 
+                    top: `${trash.y}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
                   initial={{ scale: 0, rotate: -180 }}
-                  animate={{ 
-                    scale: item.dead ? 0 : 1,
-                    rotate: item.type === 'fish' ? [0, 10, -10, 0] : 0,
-                  }}
+                  animate={{ scale: 1, rotate: 0 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  transition={{ 
-                    scale: { duration: 0.2 },
-                    rotate: { duration: 1, repeat: Infinity },
-                  }}
                 >
-                  {item.emoji}
-                  {item.collected && (
+                  {trash.emoji}
+                  {trash.collected && (
                     <motion.span
                       className="absolute -top-8 left-1/2 -translate-x-1/2 text-yellow-300 font-bold text-lg whitespace-nowrap"
                       initial={{ opacity: 1, y: 0 }}
                       animate={{ opacity: 0, y: -30 }}
                     >
-                      +{item.points}
+                      +{trash.points}
                     </motion.span>
                   )}
                 </motion.div>
               ))}
             </AnimatePresence>
 
-            {/* Dustbin (player) */}
+            {/* Swimming fish (horizontal movement) */}
+            <AnimatePresence>
+              {fishItems.map(fish => (
+                <motion.div
+                  key={fish.id}
+                  className="absolute text-4xl sm:text-5xl pointer-events-none"
+                  style={{ 
+                    left: `${fish.x}%`, 
+                    top: `${fish.y}%`,
+                    transform: `translate(-50%, -50%) scaleX(${fish.direction === 'left' ? -1 : 1})`,
+                  }}
+                  initial={{ scale: 0 }}
+                  animate={{ 
+                    scale: fish.dead ? 0 : 1,
+                    y: [0, -5, 0, 5, 0],
+                  }}
+                  exit={{ scale: 0, opacity: 0, rotate: 180 }}
+                  transition={{ 
+                    y: { duration: 1, repeat: Infinity },
+                  }}
+                >
+                  {fish.emoji}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Dustbin (player) - freely movable */}
             <motion.div
-              className="absolute bottom-20 text-6xl sm:text-7xl"
+              className="absolute text-6xl sm:text-7xl pointer-events-none"
               style={{ 
                 left: `${binX}%`, 
-                transform: 'translateX(-50%)',
+                top: `${binY}%`,
+                transform: 'translate(-50%, -50%)',
               }}
-              animate={{ y: [0, -5, 0] }}
+              animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
               🗑️
@@ -588,14 +658,25 @@ export default function OceanCleanup() {
               {isSaving ? (
                 <p className="text-gray-500">Saving... 🌊</p>
               ) : (
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1 py-6 rounded-2xl">
-                    🏠 Menu
-                  </Button>
-                  <Button onClick={startGame} className="flex-1 py-6 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 text-white">
-                    <RotateCcw className="w-5 h-5 mr-2" />
-                    {gameState === 'won' ? 'Play Again!' : 'Try Again!'}
-                  </Button>
+                <div className="flex flex-col gap-3">
+                  {gameState === 'won' && selectedLevel < 5 && (
+                    <Button 
+                      onClick={goToNextLevel} 
+                      className="w-full py-6 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-bold"
+                    >
+                      <ChevronRight className="w-6 h-6 mr-2" />
+                      Next Level (Level {selectedLevel + 1}) 🚀
+                    </Button>
+                  )}
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1 py-6 rounded-2xl">
+                      🏠 Menu
+                    </Button>
+                    <Button onClick={startGame} className="flex-1 py-6 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 text-white">
+                      <RotateCcw className="w-5 h-5 mr-2" />
+                      {gameState === 'won' ? 'Replay' : 'Try Again!'}
+                    </Button>
+                  </div>
                 </div>
               )}
             </motion.div>

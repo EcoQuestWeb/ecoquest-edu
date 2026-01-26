@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trophy, RotateCcw, Target, Volume2, VolumeX, Zap } from 'lucide-react';
+import { ArrowLeft, Trophy, RotateCcw, Target, Volume2, VolumeX, Zap, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
@@ -11,26 +11,24 @@ import { LevelUnlockAnimation } from '@/components/progression/LevelUnlockAnimat
 import { useGameSounds } from '@/hooks/useGameSounds';
 import confetti from 'canvas-confetti';
 
-// Environmental themed items for bubble shooter
+// Environmental themed items for bubble shooter (eco items only)
 const SHOOTER_ITEMS = [
   { emoji: '🌳', type: 'tree', color: 'bg-green-500' },
   { emoji: '🌍', type: 'earth', color: 'bg-blue-500' },
   { emoji: '🐟', type: 'fish', color: 'bg-cyan-500' },
   { emoji: '💧', type: 'water', color: 'bg-blue-400' },
   { emoji: '🌱', type: 'sapling', color: 'bg-lime-500' },
-  { emoji: '🐚', type: 'shell', color: 'bg-pink-400' },
   { emoji: '⭐', type: 'star', color: 'bg-yellow-400' },
 ];
 
-interface BubbleItem {
+interface GridCell {
   id: number;
-  x: number;
-  y: number;
+  row: number;
+  col: number;
   type: string;
   emoji: string;
   color: string;
-  matched: boolean;
-  falling: boolean;
+  popping: boolean;
 }
 
 interface ShootingBubble {
@@ -53,12 +51,16 @@ interface LevelConfig {
 }
 
 const LEVEL_CONFIGS: LevelConfig[] = [
-  { level: 1, targetScore: 100, timeLimit: 60, gridRows: 4, shooterSpeed: 15 },
-  { level: 2, targetScore: 150, timeLimit: 55, gridRows: 5, shooterSpeed: 16 },
-  { level: 3, targetScore: 200, timeLimit: 50, gridRows: 5, shooterSpeed: 17 },
-  { level: 4, targetScore: 250, timeLimit: 45, gridRows: 6, shooterSpeed: 18 },
-  { level: 5, targetScore: 300, timeLimit: 45, gridRows: 6, shooterSpeed: 20 },
+  { level: 1, targetScore: 100, timeLimit: 60, gridRows: 4, shooterSpeed: 12 },
+  { level: 2, targetScore: 150, timeLimit: 55, gridRows: 5, shooterSpeed: 13 },
+  { level: 3, targetScore: 200, timeLimit: 50, gridRows: 5, shooterSpeed: 14 },
+  { level: 4, targetScore: 250, timeLimit: 45, gridRows: 6, shooterSpeed: 15 },
+  { level: 5, targetScore: 300, timeLimit: 45, gridRows: 6, shooterSpeed: 16 },
 ];
+
+const COLS = 8;
+const CELL_SIZE = 48;
+const CELL_OFFSET = CELL_SIZE / 2;
 
 export default function TrashShooter() {
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ export default function TrashShooter() {
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [grid, setGrid] = useState<(BubbleItem | null)[][]>([]);
+  const [grid, setGrid] = useState<(GridCell | null)[][]>([]);
   const [currentBubble, setCurrentBubble] = useState<typeof SHOOTER_ITEMS[0] | null>(null);
   const [nextBubble, setNextBubble] = useState<typeof SHOOTER_ITEMS[0] | null>(null);
   const [shootingBubble, setShootingBubble] = useState<ShootingBubble | null>(null);
@@ -80,6 +82,7 @@ export default function TrashShooter() {
   const [isSaving, setIsSaving] = useState(false);
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [levelWon, setLevelWon] = useState(false);
 
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const bubbleIdRef = useRef(0);
@@ -96,24 +99,22 @@ export default function TrashShooter() {
 
   const initializeGrid = () => {
     const config = getLevelConfig();
-    const cols = 8;
-    const newGrid: (BubbleItem | null)[][] = [];
+    const newGrid: (GridCell | null)[][] = [];
 
     for (let row = 0; row < config.gridRows; row++) {
-      const gridRow: (BubbleItem | null)[] = [];
-      const offset = row % 2 === 0 ? 0 : 0.5;
+      const gridRow: (GridCell | null)[] = [];
+      const numCols = row % 2 === 0 ? COLS : COLS - 1;
       
-      for (let col = 0; col < cols - (row % 2); col++) {
+      for (let col = 0; col < numCols; col++) {
         const item = getRandomBubble();
         gridRow.push({
           id: bubbleIdRef.current++,
-          x: (col + offset) * (100 / cols) + (100 / cols / 2),
-          y: row * 10 + 5,
+          row,
+          col,
           type: item.type,
           emoji: item.emoji,
           color: item.color,
-          matched: false,
-          falling: false,
+          popping: false,
         });
       }
       newGrid.push(gridRow);
@@ -132,6 +133,7 @@ export default function TrashShooter() {
     setNextBubble(getRandomBubble());
     setShootingBubble(null);
     setAimAngle(90);
+    setLevelWon(false);
     bubbleIdRef.current = 0;
     setGameState('playing');
   };
@@ -153,6 +155,51 @@ export default function TrashShooter() {
     return () => clearInterval(timer);
   }, [gameState]);
 
+  // Get cell position
+  const getCellPosition = (row: number, col: number) => {
+    const offset = row % 2 === 0 ? 0 : CELL_OFFSET;
+    return {
+      x: col * CELL_SIZE + CELL_OFFSET + offset + 10,
+      y: row * (CELL_SIZE - 5) + CELL_OFFSET + 80,
+    };
+  };
+
+  // Find connected cells of same type using flood fill
+  const findConnectedCells = (grid: (GridCell | null)[][], startRow: number, startCol: number, type: string): Set<string> => {
+    const connected = new Set<string>();
+    const queue: [number, number][] = [[startRow, startCol]];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+      const [row, col] = queue.shift()!;
+      const key = `${row},${col}`;
+      
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const cell = grid[row]?.[col];
+      if (!cell || cell.type !== type) continue;
+
+      connected.add(key);
+
+      // Get neighbors (6 directions for hex grid)
+      const isEvenRow = row % 2 === 0;
+      const neighbors = isEvenRow
+        ? [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]]
+        : [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
+
+      for (const [dr, dc] of neighbors) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        if (newRow >= 0 && newRow < grid.length && newCol >= 0 && newCol < (grid[newRow]?.length || 0)) {
+          queue.push([newRow, newCol]);
+        }
+      }
+    }
+
+    return connected;
+  };
+
   // Handle shooting
   const handleShoot = useCallback(() => {
     if (!currentBubble || shootingBubble || gameState !== 'playing') return;
@@ -167,8 +214,8 @@ export default function TrashShooter() {
       type: currentBubble.type,
       emoji: currentBubble.emoji,
       color: currentBubble.color,
-      vx: Math.cos(radians) * config.shooterSpeed,
-      vy: -Math.sin(radians) * config.shooterSpeed,
+      vx: Math.cos(radians) * config.shooterSpeed * 0.5,
+      vy: -Math.sin(radians) * config.shooterSpeed * 0.5,
     });
 
     if (soundEnabled) playPop();
@@ -194,31 +241,43 @@ export default function TrashShooter() {
           newX = Math.max(5, Math.min(95, newX));
         }
 
-        // Check if hit top or grid
-        if (newY <= 5) {
-          // Add to grid and check matches
-          addBubbleToGrid(prev);
+        // Check if hit top
+        if (newY <= 15) {
+          addBubbleToGrid(prev, 0, Math.round(newX / 12.5));
           return null;
         }
 
         // Check collision with grid bubbles
-        let collision = false;
-        grid.forEach((row, rowIndex) => {
-          row.forEach(cell => {
-            if (cell && !cell.matched) {
-              const dx = cell.x - newX;
-              const dy = cell.y - newY;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-              if (distance < 8) {
-                collision = true;
-              }
-            }
-          });
-        });
+        for (let row = 0; row < grid.length; row++) {
+          for (let col = 0; col < (grid[row]?.length || 0); col++) {
+            const cell = grid[row]?.[col];
+            if (!cell) continue;
 
-        if (collision) {
-          addBubbleToGrid(prev);
-          return null;
+            const pos = getCellPosition(row, col);
+            const dx = (newX / 100) * (gameAreaRef.current?.offsetWidth || 400) - pos.x;
+            const dy = (newY / 100) * (gameAreaRef.current?.offsetHeight || 600) - pos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < CELL_SIZE * 0.9) {
+              // Find best empty neighbor
+              const isEvenRow = row % 2 === 0;
+              const neighbors = isEvenRow
+                ? [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]]
+                : [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
+
+              for (const [dr, dc] of neighbors) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                if (newRow >= 0 && (!grid[newRow] || !grid[newRow][newCol])) {
+                  addBubbleToGrid(prev, newRow, newCol);
+                  return null;
+                }
+              }
+
+              addBubbleToGrid(prev, row + 1, col);
+              return null;
+            }
+          }
         }
 
         return { ...prev, x: newX, y: newY, vx: newVx };
@@ -228,77 +287,79 @@ export default function TrashShooter() {
     return () => clearInterval(interval);
   }, [shootingBubble, gameState, grid]);
 
-  const addBubbleToGrid = (bubble: ShootingBubble) => {
-    // Find nearest grid position
-    const row = Math.max(0, Math.floor(bubble.y / 10));
-    const offset = row % 2 === 0 ? 0 : 0.5;
-    const col = Math.round((bubble.x / 100) * 8 - offset);
-
-    // Add bubble and check for matches
-    const newBubble: BubbleItem = {
-      id: bubble.id,
-      x: (col + offset) * (100 / 8) + (100 / 8 / 2),
-      y: row * 10 + 5,
-      type: bubble.type,
-      emoji: bubble.emoji,
-      color: bubble.color,
-      matched: false,
-      falling: false,
-    };
-
-    // Check for matches (3+ of same type)
-    let matchCount = 1;
-    const matchedIds = new Set<number>([newBubble.id]);
-
-    // Simple matching: check adjacent bubbles
-    grid.forEach(gridRow => {
-      gridRow.forEach(cell => {
-        if (cell && cell.type === newBubble.type && !cell.matched) {
-          const dx = Math.abs(cell.x - newBubble.x);
-          const dy = Math.abs(cell.y - newBubble.y);
-          if (dx < 15 && dy < 12) {
-            matchCount++;
-            matchedIds.add(cell.id);
-          }
-        }
-      });
-    });
-
-    if (matchCount >= 3) {
-      // Match found!
-      const points = matchCount * 10 * (combo + 1);
-      setScore(s => s + points);
-      setCombo(c => c + 1);
+  const addBubbleToGrid = (bubble: ShootingBubble, row: number, col: number) => {
+    setGrid(prev => {
+      const newGrid = prev.map(r => [...r]);
       
-      if (soundEnabled) playMatch();
-      
-      // Trigger confetti for big matches
-      if (matchCount >= 4) {
-        confetti({
-          particleCount: matchCount * 10,
-          spread: 40,
-          origin: { x: bubble.x / 100, y: 0.3 },
-        });
+      // Ensure row exists
+      while (newGrid.length <= row) {
+        const numCols = newGrid.length % 2 === 0 ? COLS : COLS - 1;
+        newGrid.push(Array(numCols).fill(null));
       }
 
-      // Remove matched bubbles
-      setGrid(prev => prev.map(row => 
-        row.map(cell => 
-          cell && matchedIds.has(cell.id) ? null : cell
-        )
-      ));
-    } else {
-      // No match, add to grid
-      setCombo(0);
-      setGrid(prev => {
-        const newGrid = [...prev];
-        while (newGrid.length <= row) {
-          newGrid.push([]);
+      // Ensure column is valid
+      const maxCols = row % 2 === 0 ? COLS : COLS - 1;
+      const safeCol = Math.max(0, Math.min(col, maxCols - 1));
+
+      // Add the new bubble
+      const newCell: GridCell = {
+        id: bubble.id,
+        row,
+        col: safeCol,
+        type: bubble.type,
+        emoji: bubble.emoji,
+        color: bubble.color,
+        popping: false,
+      };
+
+      newGrid[row][safeCol] = newCell;
+
+      // Check for matches (3+ connected)
+      const connected = findConnectedCells(newGrid, row, safeCol, bubble.type);
+
+      if (connected.size >= 3) {
+        // Pop connected cells
+        const points = connected.size * 10 * (combo + 1);
+        setScore(s => s + points);
+        setCombo(c => c + 1);
+
+        if (soundEnabled) playMatch();
+
+        // Trigger confetti for big matches
+        if (connected.size >= 4) {
+          confetti({
+            particleCount: connected.size * 15,
+            spread: 50,
+            origin: { y: 0.3 },
+          });
         }
-        newGrid[row] = [...(newGrid[row] || []), newBubble];
-        return newGrid;
-      });
-    }
+
+        // Mark cells for popping and remove after animation
+        connected.forEach(key => {
+          const [r, c] = key.split(',').map(Number);
+          if (newGrid[r]?.[c]) {
+            newGrid[r][c] = { ...newGrid[r][c]!, popping: true };
+          }
+        });
+
+        setTimeout(() => {
+          setGrid(g => {
+            return g.map((row, rIdx) =>
+              row.map((cell, cIdx) => {
+                if (cell && connected.has(`${rIdx},${cIdx}`)) {
+                  return null;
+                }
+                return cell;
+              })
+            );
+          });
+        }, 300);
+      } else {
+        setCombo(0);
+      }
+
+      return newGrid;
+    });
   };
 
   // Handle aim
@@ -326,6 +387,7 @@ export default function TrashShooter() {
 
     const config = getLevelConfig();
     const won = score >= config.targetScore;
+    setLevelWon(won);
     
     const pointsEarned = Math.floor(score / 10);
 
@@ -346,6 +408,13 @@ export default function TrashShooter() {
     }
 
     setIsSaving(false);
+  };
+
+  const goToNextLevel = () => {
+    if (selectedLevel < 5) {
+      setSelectedLevel(selectedLevel + 1);
+      setTimeout(() => startGame(), 100);
+    }
   };
 
   if (loading) {
@@ -378,7 +447,6 @@ export default function TrashShooter() {
   }
 
   const config = getLevelConfig();
-  const won = score >= config.targetScore;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-green-100 to-green-200 overflow-hidden">
@@ -471,26 +539,31 @@ export default function TrashShooter() {
           style={{ touchAction: 'none' }}
         >
           {/* Grid bubbles */}
-          {grid.map((row, rowIndex) => 
-            row.map((cell) => cell && (
-              <motion.div
-                key={cell.id}
-                className={`absolute w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-2xl sm:text-3xl shadow-lg ${cell.color}`}
-                style={{ 
-                  left: `${cell.x}%`, 
-                  top: `${cell.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                initial={{ scale: 0 }}
-                animate={{ 
-                  scale: cell.matched ? 0 : 1,
-                  y: cell.falling ? 100 : 0,
-                }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                {cell.emoji}
-              </motion.div>
-            ))
+          {grid.map((row, rowIdx) => 
+            row.map((cell, colIdx) => {
+              if (!cell) return null;
+              const pos = getCellPosition(rowIdx, colIdx);
+              
+              return (
+                <motion.div
+                  key={cell.id}
+                  className={`absolute w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-2xl sm:text-3xl shadow-lg ${cell.color}`}
+                  style={{ 
+                    left: pos.x,
+                    top: pos.y,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  initial={{ scale: 0 }}
+                  animate={{ 
+                    scale: cell.popping ? [1, 1.3, 0] : 1,
+                    opacity: cell.popping ? [1, 1, 0] : 1,
+                  }}
+                  transition={{ duration: cell.popping ? 0.3 : 0.2 }}
+                >
+                  {cell.emoji}
+                </motion.div>
+              );
+            })
           )}
 
           {/* Shooting bubble */}
@@ -537,10 +610,10 @@ export default function TrashShooter() {
               </motion.div>
             )}
             
-            {/* Next bubble */}
+            {/* Next bubble indicator */}
             {nextBubble && (
-              <div className="flex items-center gap-2 text-gray-600">
-                <span className="text-sm">Next:</span>
+              <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full">
+                <span className="text-sm text-gray-600 font-medium">Next:</span>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xl ${nextBubble.color}`}>
                   {nextBubble.emoji}
                 </div>
@@ -550,7 +623,7 @@ export default function TrashShooter() {
 
           {/* Tap to shoot hint */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
-            <p className="text-gray-600 font-medium">👆 Aim & Tap to shoot!</p>
+            <p className="text-gray-600 font-medium bg-white/80 px-4 py-2 rounded-full">👆 Aim & Tap to shoot!</p>
           </div>
         </div>
       )}
@@ -567,18 +640,18 @@ export default function TrashShooter() {
               className="text-8xl mb-4"
               animate={{ 
                 scale: [1, 1.2, 1],
-                rotate: won ? [0, -10, 10, 0] : 0,
+                rotate: levelWon ? [0, -10, 10, 0] : 0,
               }}
-              transition={{ duration: 0.5, repeat: won ? 3 : 0 }}
+              transition={{ duration: 0.5, repeat: levelWon ? 3 : 0 }}
             >
-              {won ? '🎉' : '😊'}
+              {levelWon ? '🎉' : '😊'}
             </motion.div>
 
             <h2 className="font-display font-bold text-3xl text-gray-800 mb-2">
-              {won ? 'Amazing!' : 'Good Try!'}
+              {levelWon ? 'Amazing!' : 'Good Try!'}
             </h2>
             <p className="text-gray-600 mb-6 text-lg">
-              {won ? 'You matched them all! 🌟' : `Target was ${config.targetScore} points!`}
+              {levelWon ? 'You matched them all! 🌟' : `Target was ${config.targetScore} points!`}
             </p>
 
             <div className="bg-yellow-100 rounded-2xl p-6 mb-6">
@@ -590,14 +663,25 @@ export default function TrashShooter() {
             {isSaving ? (
               <p className="text-gray-500">Saving progress... 🎯</p>
             ) : (
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1 py-6 rounded-2xl">
-                  🏠 Menu
-                </Button>
-                <Button onClick={startGame} className="flex-1 py-6 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  {won ? 'Play Again!' : 'Try Again!'}
-                </Button>
+              <div className="flex flex-col gap-3">
+                {levelWon && selectedLevel < 5 && (
+                  <Button 
+                    onClick={goToNextLevel}
+                    className="w-full py-6 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-bold"
+                  >
+                    <ChevronRight className="w-6 h-6 mr-2" />
+                    Next Level (Level {selectedLevel + 1}) 🚀
+                  </Button>
+                )}
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setGameState('menu')} className="flex-1 py-6 rounded-2xl">
+                    🏠 Menu
+                  </Button>
+                  <Button onClick={startGame} className="flex-1 py-6 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                    <RotateCcw className="w-5 h-5 mr-2" />
+                    {levelWon ? 'Replay' : 'Try Again!'}
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>

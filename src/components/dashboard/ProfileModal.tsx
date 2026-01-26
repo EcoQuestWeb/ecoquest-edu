@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, School, MapPin, Globe, Trophy, Calendar, LogOut, Pencil, Check } from 'lucide-react';
+import { X, User, School, MapPin, Globe, Trophy, Calendar, LogOut, Pencil, Check, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -47,12 +48,41 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
   const { profile, signOut, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [editedData, setEditedData] = useState({
     name: profile?.name || '',
     institution: profile?.institution || '',
     class: profile?.class || 1,
     gender: profile?.gender || 'male',
   });
+
+  // Load dark mode preference on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('ecoquest_theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    setIsDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('ecoquest_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('ecoquest_theme', 'light');
+    }
+    
+    toast.success(newMode ? 'Dark mode enabled 🌙' : 'Light mode enabled ☀️');
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -156,6 +186,34 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
+          {/* Dark Mode Toggle */}
+          <motion.div 
+            className="flex items-center justify-between bg-muted/50 rounded-xl p-3"
+            whileHover={{ x: 4 }}
+            transition={{ type: 'spring', stiffness: 400 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                {isDarkMode ? (
+                  <Moon className="w-4 h-4 text-primary" />
+                ) : (
+                  <Sun className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase">Theme</p>
+                <p className="text-sm font-medium text-foreground">
+                  {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                </p>
+              </div>
+            </div>
+            <Switch 
+              checked={isDarkMode} 
+              onCheckedChange={toggleDarkMode}
+              className="data-[state=checked]:bg-primary"
+            />
+          </motion.div>
+
           {/* Points Badge */}
           <motion.div 
             className="bg-eco-sun/20 rounded-xl p-3 text-center"
