@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion';
-import { ArrowLeft, Recycle, Check, X, RotateCcw, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { ArrowLeft, Recycle, RotateCcw, Trophy, Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
@@ -94,6 +94,7 @@ export default function WasteSorting() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [levelWon, setLevelWon] = useState(false);
 
   const usedItemsRef = useRef<Set<number>>(new Set());
   const binsRef = useRef<Map<string, DOMRect>>(new Map());
@@ -119,6 +120,7 @@ export default function WasteSorting() {
     setWrongAnswers(0);
     setTimeLeft(config.timeLimit);
     setFeedback(null);
+    setLevelWon(false);
     setGameState('playing');
   };
 
@@ -203,6 +205,7 @@ export default function WasteSorting() {
     
     const config = getLevelConfig();
     const won = finalScore >= config.targetScore && completed;
+    setLevelWon(won);
     const pointsEarned = Math.floor(finalScore / 10) * 2;
     
     if (won && soundEnabled) {
@@ -226,6 +229,13 @@ export default function WasteSorting() {
     }
     
     setIsSaving(false);
+  };
+
+  const goToNextLevel = () => {
+    if (selectedLevel < 5) {
+      setSelectedLevel(selectedLevel + 1);
+      setTimeout(() => startGame(), 100);
+    }
   };
 
   // Update bin positions for drag detection
@@ -276,7 +286,6 @@ export default function WasteSorting() {
   }
 
   const config = getLevelConfig();
-  const won = score >= config.targetScore;
 
   return (
     <div className="min-h-screen overflow-hidden relative">
@@ -352,7 +361,7 @@ export default function WasteSorting() {
                 dragSnapToOrigin
                 onDragStart={() => setIsDragging(true)}
                 onDragEnd={handleDragEnd}
-                whileDrag={{ scale: 1.1, zIndex: 100 }}
+                whileDrag={{ scale: 0.85, zIndex: 100 }}
                 className={`bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl cursor-grab active:cursor-grabbing ${
                   isDragging ? 'shadow-3xl' : ''
                 }`}
@@ -383,7 +392,7 @@ export default function WasteSorting() {
                 </AnimatePresence>
                 
                 <motion.div 
-                  className={currentItem.size}
+                  className={`${currentItem.size} ${isDragging ? 'scale-90' : ''} transition-transform`}
                   animate={{ 
                     y: [0, -10, 0],
                     rotate: isDragging ? [0, -5, 5, 0] : 0,
@@ -458,18 +467,18 @@ export default function WasteSorting() {
               className="text-8xl mb-6"
               animate={{ 
                 scale: [1, 1.2, 1],
-                rotate: won ? [0, -10, 10, -10, 0] : 0,
+                rotate: levelWon ? [0, -10, 10, -10, 0] : 0,
               }}
-              transition={{ duration: 0.5, repeat: won ? 3 : 0 }}
+              transition={{ duration: 0.5, repeat: levelWon ? 3 : 0 }}
             >
-              {won ? '🎉' : '😢'}
+              {levelWon ? '🎉' : '😢'}
             </motion.div>
 
             <h2 className="font-display font-bold text-3xl text-gray-800 mb-2">
-              {won ? 'Amazing!' : 'Keep Trying!'}
+              {levelWon ? 'Amazing!' : 'Keep Trying!'}
             </h2>
             <p className="text-gray-600 mb-6 text-lg">
-              {won ? 'You\'re a recycling superstar! 🌟' : `You need ${config.targetScore} points to win!`}
+              {levelWon ? 'You\'re a recycling superstar! 🌟' : `You need ${config.targetScore} points to win!`}
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -500,21 +509,32 @@ export default function WasteSorting() {
                 <span>Saving...</span>
               </div>
             ) : (
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setGameState('menu')} 
-                  className="flex-1 py-6 text-lg rounded-2xl"
-                >
-                  🏠 Menu
-                </Button>
-                <Button 
-                  onClick={startGame} 
-                  className="flex-1 py-6 text-lg rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white"
-                >
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  {won ? 'Play Again!' : 'Try Again!'}
-                </Button>
+              <div className="flex flex-col gap-3">
+                {levelWon && selectedLevel < 5 && (
+                  <Button 
+                    onClick={goToNextLevel}
+                    className="w-full py-6 text-lg rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold"
+                  >
+                    <ChevronRight className="w-6 h-6 mr-2" />
+                    Next Level (Level {selectedLevel + 1}) 🚀
+                  </Button>
+                )}
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setGameState('menu')} 
+                    className="flex-1 py-6 text-lg rounded-2xl"
+                  >
+                    🏠 Menu
+                  </Button>
+                  <Button 
+                    onClick={startGame} 
+                    className="flex-1 py-6 text-lg rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                  >
+                    <RotateCcw className="w-5 h-5 mr-2" />
+                    {levelWon ? 'Replay' : 'Try Again!'}
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>
