@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trophy, Heart, Play, RotateCcw, Waves, Lock, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trophy, Play, RotateCcw, Lock, Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameProgress } from '@/hooks/useGameProgress';
@@ -69,7 +69,7 @@ export default function OceanCleanup() {
   const { user, loading } = useAuth();
   const { completeGame } = useGameProgress();
   const { getGameProgress, completeLevel, isLevelUnlocked } = useLevelProgress();
-  const { playSuccess, playError, playSplash, playFanfare, playPop } = useGameSounds();
+  const { playSuccess, playError, playFanfare, playPop } = useGameSounds();
 
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'won' | 'lost'>('menu');
@@ -133,7 +133,7 @@ export default function OceanCleanup() {
         id: itemIdRef.current++,
         emoji: fishEmoji,
         x: direction === 'right' ? -10 : 110,
-        y: 30 + Math.random() * 50, // Swim in middle to lower area
+        y: 30 + Math.random() * 50,
         speed: levelConfig.fishSpeed + (Math.random() - 0.5),
         direction,
         dead: false,
@@ -264,7 +264,7 @@ export default function OceanCleanup() {
     const y = ((clientY - rect.top) / rect.height) * 100;
     
     setBinX(Math.max(10, Math.min(90, x)));
-    setBinY(Math.max(30, Math.min(90, y)));
+    setBinY(Math.max(20, Math.min(90, y)));
   }, [gameState]);
 
   const startGame = () => {
@@ -313,7 +313,7 @@ export default function OceanCleanup() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-400 to-blue-600">
+      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-gradient-to-b from-sky-400 to-blue-600">
         <motion.div 
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -326,7 +326,7 @@ export default function OceanCleanup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-300 via-blue-400 to-blue-800 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-b from-sky-300 via-blue-400 to-blue-800 overflow-hidden flex flex-col">
       {/* Animated ocean background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Sun */}
@@ -374,7 +374,7 @@ export default function OceanCleanup() {
       </div>
 
       {/* Header */}
-      <header className="bg-blue-900/80 backdrop-blur-md border-b border-blue-600 fixed top-0 left-0 right-0 z-50">
+      <header className="bg-blue-900/80 backdrop-blur-md border-b border-blue-600 flex-shrink-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -420,86 +420,88 @@ export default function OceanCleanup() {
         </div>
       </header>
 
-      <main className="h-screen pt-16">
+      <main className="flex-1 relative">
         {gameState === 'menu' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="container mx-auto px-4 py-6 max-w-lg space-y-6 relative z-10"
+            className="absolute inset-0 flex items-center justify-center p-4"
           >
-            {/* Game info card */}
-            <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 text-center text-white">
-              <motion.div 
-                animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="text-7xl mb-4"
-              >
-                🗑️
-              </motion.div>
-              <h2 className="font-display text-2xl font-bold mb-2">Ocean Cleanup!</h2>
-              <p className="text-blue-100 mb-4 text-lg">
-                Move the bin freely to catch trash 🥤🧴<br/>
-                Fish swim across - don't hit them! 🐠🐟
-              </p>
-              
-              <div className="bg-blue-900/40 rounded-2xl p-4 text-left">
-                <p className="text-blue-200 font-bold mb-2 flex items-center gap-2">
-                  <span className="text-xl">💡</span> How to play:
+            <div className="max-w-lg w-full space-y-6 relative z-10">
+              {/* Game info card */}
+              <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 text-center text-white">
+                <motion.div 
+                  animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="text-7xl mb-4"
+                >
+                  🗑️
+                </motion.div>
+                <h2 className="font-display text-2xl font-bold mb-2">Ocean Cleanup!</h2>
+                <p className="text-blue-100 mb-4 text-lg">
+                  Move the bin freely to catch trash 🥤🧴<br/>
+                  Fish swim across - don't hit them! 🐠🐟
                 </p>
-                <ul className="text-blue-100 space-y-1 text-sm">
-                  <li>• Move your finger/mouse to control the bin</li>
-                  <li>• Catch falling trash for points</li>
-                  <li>• Fish swim left ↔ right - avoid them!</li>
-                  <li>• If {levelConfig.maxFishDeaths}+ fish die, game over!</li>
-                </ul>
+                
+                <div className="bg-blue-900/40 rounded-2xl p-4 text-left">
+                  <p className="text-blue-200 font-bold mb-2 flex items-center gap-2">
+                    <span className="text-xl">💡</span> How to play:
+                  </p>
+                  <ul className="text-blue-100 space-y-1 text-sm">
+                    <li>• Move your finger/mouse to control the bin</li>
+                    <li>• Catch falling trash for points</li>
+                    <li>• Fish swim left ↔ right - avoid them!</li>
+                    <li>• If {levelConfig.maxFishDeaths}+ fish die, game over!</li>
+                  </ul>
+                </div>
               </div>
+
+              {/* Plant progress */}
+              <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-medium">Your Progress</h3>
+                  <PlantGrowth stage={progress.plantStage} size="sm" />
+                </div>
+                <div className="text-sm text-blue-200 mt-2">
+                  Levels completed: {progress.levelsCompleted.length}/5
+                </div>
+              </div>
+
+              {/* Level selector */}
+              <LevelSelector
+                gameName="ocean-cleanup"
+                onSelectLevel={setSelectedLevel}
+                currentLevel={selectedLevel}
+              />
+
+              {/* Start button */}
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button 
+                  onClick={startGame}
+                  disabled={!isLevelUnlocked('ocean-cleanup', selectedLevel)}
+                  className="w-full py-8 text-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-xl rounded-2xl"
+                >
+                  {isLevelUnlocked('ocean-cleanup', selectedLevel) ? (
+                    <>
+                      <Play className="w-8 h-8 mr-3" />
+                      Start Level {selectedLevel}!
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-8 h-8 mr-3" />
+                      Complete Level {selectedLevel - 1}
+                    </>
+                  )}
+                </Button>
+              </motion.div>
             </div>
-
-            {/* Plant progress */}
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-medium">Your Progress</h3>
-                <PlantGrowth stage={progress.plantStage} size="sm" />
-              </div>
-              <div className="text-sm text-blue-200 mt-2">
-                Levels completed: {progress.levelsCompleted.length}/5
-              </div>
-            </div>
-
-            {/* Level selector */}
-            <LevelSelector
-              gameName="ocean-cleanup"
-              onSelectLevel={setSelectedLevel}
-              currentLevel={selectedLevel}
-            />
-
-            {/* Start button */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button 
-                onClick={startGame}
-                disabled={!isLevelUnlocked('ocean-cleanup', selectedLevel)}
-                className="w-full py-8 text-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-xl rounded-2xl"
-              >
-                {isLevelUnlocked('ocean-cleanup', selectedLevel) ? (
-                  <>
-                    <Play className="w-8 h-8 mr-3" />
-                    Start Level {selectedLevel}!
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-8 h-8 mr-3" />
-                    Complete Level {selectedLevel - 1}
-                  </>
-                )}
-              </Button>
-            </motion.div>
           </motion.div>
         )}
 
         {gameState === 'playing' && (
           <div 
             ref={gameAreaRef}
-            className="relative w-full h-full cursor-none"
+            className="absolute inset-0 cursor-none"
             onMouseMove={handleMove}
             onTouchMove={handleMove}
             onTouchStart={handleMove}
@@ -615,7 +617,7 @@ export default function OceanCleanup() {
 
         {/* Win/Lose screens */}
         {(gameState === 'won' || gameState === 'lost') && (
-          <div className="h-full flex items-center justify-center px-4 relative z-10">
+          <div className="absolute inset-0 flex items-center justify-center px-4 z-10">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

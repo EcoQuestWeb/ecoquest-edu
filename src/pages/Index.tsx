@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Recycle, Puzzle, Type, Brain, Globe, Sparkles, TreePine, Zap, Waves, Target } from 'lucide-react';
+import { Recycle, Brain, Globe, Zap, Waves, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/dashboard/Header';
 import { UserStats } from '@/components/dashboard/UserStats';
@@ -53,8 +53,9 @@ const Index = () => {
 
   const showAdvancedQuiz = profile.class >= 10;
 
-  type GameColor = 'green' | 'blue' | 'orange' | 'purple' | 'teal' | 'pink' | 'yellow';
+  type GameColor = 'green' | 'blue' | 'orange' | 'purple' | 'teal' | 'yellow';
   
+  // STRICT: Only 6 games - no duplicates
   const games: Array<{
     title: string;
     description: string;
@@ -70,22 +71,15 @@ const Index = () => {
       color: "green",
     },
     {
-      title: "Eco Wordle 🔤",
-      description: "Guess the hidden eco-word! Fewer guesses in harder levels.",
-      icon: <Type className="w-6 h-6 sm:w-7 sm:h-7 text-eco-earth" />,
-      path: "/games/eco-wordle",
-      color: "orange",
-    },
-    {
       title: "Ocean Cleanup 🌊",
-      description: "Clean the ocean! Collect trash while avoiding obstacles.",
+      description: "Clean the ocean! Collect trash while avoiding fish.",
       icon: <Waves className="w-6 h-6 sm:w-7 sm:h-7 text-blue-400" />,
       path: "/games/ocean-cleanup",
       color: "blue",
     },
     {
       title: "Trash Shooter 🎯",
-      description: "Shoot falling trash! Avoid hazardous waste for bonus points.",
+      description: "Match 3+ eco items to pop them! Aim and shoot!",
       icon: <Target className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" />,
       path: "/games/trash-shooter",
       color: "orange",
@@ -98,60 +92,19 @@ const Index = () => {
       color: "teal",
     },
     {
-      title: "Waste Sorting Game",
-      description: "Learn to sort waste into the correct recycling bins. Save the planet one item at a time!",
-      icon: <Recycle className="w-6 h-6 sm:w-7 sm:h-7 text-eco-leaf" />,
-      path: "/games/waste-sorting",
-      color: "green",
-    },
-    {
-      title: "Eco Puzzle",
-      description: "Solve beautiful nature-themed puzzles while discovering amazing eco-facts!",
-      icon: <Puzzle className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />,
-      path: "/games/eco-puzzle",
-      color: "blue",
-    },
-    {
-      title: "Eco Wordle",
-      description: "Guess the hidden eco-word in 6 tries! Expand your environmental vocabulary.",
-      icon: <Type className="w-6 h-6 sm:w-7 sm:h-7 text-eco-earth" />,
-      path: "/games/eco-wordle",
-      color: "orange",
-    },
-    {
-      title: "Carbon Footprint Calculator 🌍",
-      description: "Answer simple questions to discover your environmental impact and earn points!",
-      icon: <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-teal-500" />,
-      path: "/games/carbon-footprint",
-      color: "teal",
-    },
-    {
-      title: "Eco Match Game 🧠",
-      description: "Match items with their correct environmental actions. Test your eco-knowledge!",
-      icon: <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-pink-500" />,
-      path: "/games/eco-match",
-      color: "pink",
-    },
-    {
-      title: "Save the Forest 🌳",
-      description: "Make decisions to protect Greenwood Forest. Your choices shape the ecosystem!",
-      icon: <TreePine className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />,
-      path: "/games/save-the-forest",
-      color: "green",
-    },
-    {
       title: "Rapid Eco Quiz ⚡",
-      description: "Quick-fire environmental questions with a timer. Build streaks for bonus points!",
+      description: "Quick-fire environmental questions with a timer!",
       icon: <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-yellow-500" />,
       path: "/games/rapid-eco-quiz",
       color: "yellow",
     },
   ];
 
+  // Only show Environmental Quiz for class 10+
   if (showAdvancedQuiz) {
     games.push({
-      title: "Environmental Quiz Challenge",
-      description: "Advanced environmental science questions for senior students. Test your knowledge!",
+      title: "Environmental Quiz 🧠",
+      description: "Advanced environmental science questions for senior students!",
       icon: <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-purple-500" />,
       path: "/games/environmental-quiz",
       color: "purple",

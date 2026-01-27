@@ -258,7 +258,7 @@ export default function WasteSorting() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-sky">
+      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-gradient-to-b from-eco-sky/20 via-background to-eco-leaf/10">
         <motion.div 
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 1, repeat: Infinity }}
@@ -288,7 +288,7 @@ export default function WasteSorting() {
   const config = getLevelConfig();
 
   return (
-    <div className="min-h-screen overflow-hidden relative">
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden flex flex-col">
       <AnimatedBackground type="nature" />
       
       {/* Level Unlock Animation */}
@@ -299,18 +299,23 @@ export default function WasteSorting() {
       />
 
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-green-200 fixed top-0 left-0 right-0 z-50 shadow-lg">
+      <header className="bg-card/90 dark:bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => setGameState('menu')} className="rounded-full">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setGameState('menu')} 
+                className="rounded-full text-foreground hover:bg-muted"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="font-display font-bold text-lg text-green-800 flex items-center gap-2">
+                <h1 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
                   ♻️ Waste Sorting
                 </h1>
-                <p className="text-xs text-green-600">Level {selectedLevel} • Target: {config.targetScore} pts</p>
+                <p className="text-xs text-muted-foreground">Level {selectedLevel} • Target: {config.targetScore} pts</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -318,35 +323,35 @@ export default function WasteSorting() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="rounded-full"
+                className="rounded-full text-foreground"
               >
                 {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </Button>
               <div className={`px-4 py-2 rounded-full font-bold text-lg ${
-                timeLeft <= 10 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-green-100 text-green-700'
+                timeLeft <= 10 ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 animate-pulse' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
               }`}>
                 ⏱️ {timeLeft}s
               </div>
-              <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full">
-                <Trophy className="w-5 h-5 text-yellow-600" />
-                <span className="font-bold text-yellow-700 text-lg">{score}</span>
+              <div className="flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/50 px-4 py-2 rounded-full">
+                <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-bold text-yellow-700 dark:text-yellow-300 text-lg">{score}</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-24 pb-8 relative z-10">
+      <main className="flex-1 flex flex-col p-4 relative z-10 overflow-hidden">
         {gameState === 'playing' && currentItem ? (
-          <div className="max-w-2xl mx-auto space-y-6">
+          <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
             {/* Progress */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 mb-4">
               {items.map((_, i) => (
                 <motion.div
                   key={i}
                   className={`w-4 h-4 rounded-full ${
                     i < currentIndex ? 'bg-green-500' : 
-                    i === currentIndex ? 'bg-green-400 ring-4 ring-green-200' : 'bg-gray-200'
+                    i === currentIndex ? 'bg-green-400 ring-4 ring-green-200 dark:ring-green-800' : 'bg-muted'
                   }`}
                   initial={i === currentIndex ? { scale: 0 } : undefined}
                   animate={{ scale: 1 }}
@@ -355,14 +360,14 @@ export default function WasteSorting() {
             </div>
 
             {/* Current Item - Draggable */}
-            <div className="flex justify-center py-8">
+            <div className="flex-1 flex items-center justify-center">
               <motion.div
                 drag
                 dragSnapToOrigin
                 onDragStart={() => setIsDragging(true)}
                 onDragEnd={handleDragEnd}
                 whileDrag={{ scale: 0.85, zIndex: 100 }}
-                className={`bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl cursor-grab active:cursor-grabbing ${
+                className={`bg-card/95 dark:bg-card backdrop-blur-sm rounded-3xl p-8 shadow-2xl cursor-grab active:cursor-grabbing relative ${
                   isDragging ? 'shadow-3xl' : ''
                 }`}
                 style={{ touchAction: 'none' }}
@@ -404,24 +409,24 @@ export default function WasteSorting() {
                 >
                   {currentItem.emoji}
                 </motion.div>
-                <p className="text-center mt-4 font-bold text-xl text-gray-700">
+                <p className="text-center mt-4 font-bold text-xl text-foreground">
                   {currentItem.name}
                 </p>
-                <p className="text-center text-sm text-gray-500 mt-1">
+                <p className="text-center text-sm text-muted-foreground mt-1">
                   👆 Drag to the right bin!
                 </p>
               </motion.div>
             </div>
 
             {/* Bins */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-5 gap-2 sm:gap-3 mt-4">
               {BINS.map(bin => (
                 <motion.button
                   id={`bin-${bin.id}`}
                   key={bin.id}
                   onClick={() => handleBinSelect(bin.id)}
                   disabled={!!feedback}
-                  className={`bg-gradient-to-b ${bin.color} p-4 rounded-2xl text-white text-center transition-all shadow-lg
+                  className={`bg-gradient-to-b ${bin.color} p-3 sm:p-4 rounded-2xl text-white text-center transition-all shadow-lg relative
                     ${draggedOver === bin.id ? 'ring-4 ring-white scale-110' : ''}
                     ${feedback?.bin === bin.id ? (feedback.correct ? 'ring-4 ring-green-300' : 'ring-4 ring-red-300 animate-shake') : ''}
                   `}
@@ -430,114 +435,110 @@ export default function WasteSorting() {
                   animate={feedback?.bin === bin.id && feedback.correct ? { y: [0, -20, 0] } : {}}
                 >
                   <motion.div 
-                    className="text-4xl mb-2"
+                    className="text-3xl sm:text-4xl mb-1 sm:mb-2"
                     animate={{ rotate: [0, -10, 10, 0] }}
                     transition={{ duration: 2, repeat: Infinity, delay: BINS.indexOf(bin) * 0.2 }}
                   >
                     {bin.emoji}
                   </motion.div>
-                  <p className="text-sm font-bold">{bin.name}</p>
-                  
-                  {/* Bin opening animation */}
-                  <motion.div
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-2 bg-white/30 rounded-full"
-                    animate={{ scaleX: draggedOver === bin.id ? 1.5 : 1 }}
-                  />
+                  <p className="text-xs sm:text-sm font-bold">{bin.name}</p>
                 </motion.button>
               ))}
             </div>
 
             {/* Fun tip */}
             <motion.div 
-              className="text-center text-gray-600 bg-white/80 rounded-2xl p-4"
+              className="text-center text-muted-foreground bg-card/80 dark:bg-card rounded-2xl p-3 mt-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
               <span className="text-2xl mr-2">💡</span>
-              <span className="font-medium">Tip: You can also tap the bins!</span>
+              <span className="font-medium text-sm">Tip: You can also tap the bins!</span>
             </motion.div>
           </div>
         ) : gameState === 'finished' && (
-          <motion.div 
-            className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto text-center shadow-2xl"
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-          >
+          <div className="flex-1 flex items-center justify-center">
             <motion.div 
-              className="text-8xl mb-6"
-              animate={{ 
-                scale: [1, 1.2, 1],
-                rotate: levelWon ? [0, -10, 10, -10, 0] : 0,
-              }}
-              transition={{ duration: 0.5, repeat: levelWon ? 3 : 0 }}
+              className="bg-card/95 dark:bg-card backdrop-blur-sm rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
             >
-              {levelWon ? '🎉' : '😢'}
-            </motion.div>
+              <motion.div 
+                className="text-8xl mb-6"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: levelWon ? [0, -10, 10, -10, 0] : 0,
+                }}
+                transition={{ duration: 0.5, repeat: levelWon ? 3 : 0 }}
+              >
+                {levelWon ? '🎉' : '😢'}
+              </motion.div>
 
-            <h2 className="font-display font-bold text-3xl text-gray-800 mb-2">
-              {levelWon ? 'Amazing!' : 'Keep Trying!'}
-            </h2>
-            <p className="text-gray-600 mb-6 text-lg">
-              {levelWon ? 'You\'re a recycling superstar! 🌟' : `You need ${config.targetScore} points to win!`}
-            </p>
+              <h2 className="font-display font-bold text-3xl text-foreground mb-2">
+                {levelWon ? 'Amazing!' : 'Keep Trying!'}
+              </h2>
+              <p className="text-muted-foreground mb-6 text-lg">
+                {levelWon ? 'You\'re a recycling superstar! 🌟' : `You need ${config.targetScore} points to win!`}
+              </p>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-green-100 rounded-2xl p-4">
-                <p className="text-4xl font-bold text-green-600">{score / 10}</p>
-                <p className="text-sm text-green-700">Correct ✅</p>
-              </div>
-              <div className="bg-red-100 rounded-2xl p-4">
-                <p className="text-4xl font-bold text-red-500">{wrongAnswers}</p>
-                <p className="text-sm text-red-600">Wrong ❌</p>
-              </div>
-            </div>
-
-            <div className="bg-yellow-100 rounded-2xl p-4 mb-6">
-              <p className="text-sm text-yellow-700">Points Earned</p>
-              <p className="font-bold text-3xl text-yellow-600">+{Math.floor(score / 10) * 2} ⭐</p>
-            </div>
-
-            {isSaving ? (
-              <div className="flex items-center justify-center gap-2 text-gray-500">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="text-2xl"
-                >
-                  ♻️
-                </motion.div>
-                <span>Saving...</span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {levelWon && selectedLevel < 5 && (
-                  <Button 
-                    onClick={goToNextLevel}
-                    className="w-full py-6 text-lg rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold"
-                  >
-                    <ChevronRight className="w-6 h-6 mr-2" />
-                    Next Level (Level {selectedLevel + 1}) 🚀
-                  </Button>
-                )}
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setGameState('menu')} 
-                    className="flex-1 py-6 text-lg rounded-2xl"
-                  >
-                    🏠 Menu
-                  </Button>
-                  <Button 
-                    onClick={startGame} 
-                    className="flex-1 py-6 text-lg rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                  >
-                    <RotateCcw className="w-5 h-5 mr-2" />
-                    {levelWon ? 'Replay' : 'Try Again!'}
-                  </Button>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-green-100 dark:bg-green-900/30 rounded-2xl p-4">
+                  <p className="text-4xl font-bold text-green-600 dark:text-green-400">{score / 10}</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">Correct ✅</p>
+                </div>
+                <div className="bg-red-100 dark:bg-red-900/30 rounded-2xl p-4">
+                  <p className="text-4xl font-bold text-red-500 dark:text-red-400">{wrongAnswers}</p>
+                  <p className="text-sm text-red-600 dark:text-red-300">Wrong ❌</p>
                 </div>
               </div>
-            )}
-          </motion.div>
+
+              <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl p-4 mb-6">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">Points Earned</p>
+                <p className="font-bold text-3xl text-yellow-600 dark:text-yellow-400">+{Math.floor(score / 10) * 2} ⭐</p>
+              </div>
+
+              {isSaving ? (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="text-2xl"
+                  >
+                    ♻️
+                  </motion.div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {levelWon && selectedLevel < 5 && (
+                    <Button 
+                      onClick={goToNextLevel}
+                      className="w-full py-6 text-lg rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold"
+                    >
+                      <ChevronRight className="w-6 h-6 mr-2" />
+                      Next Level (Level {selectedLevel + 1}) 🚀
+                    </Button>
+                  )}
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setGameState('menu')} 
+                      className="flex-1 py-6 text-lg rounded-2xl"
+                    >
+                      🏠 Menu
+                    </Button>
+                    <Button 
+                      onClick={startGame} 
+                      className="flex-1 py-6 text-lg rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                    >
+                      <RotateCcw className="w-5 h-5 mr-2" />
+                      {levelWon ? 'Replay' : 'Try Again!'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </main>
     </div>
