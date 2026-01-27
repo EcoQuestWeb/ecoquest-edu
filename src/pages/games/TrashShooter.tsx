@@ -419,7 +419,7 @@ export default function TrashShooter() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-200 to-blue-200">
+      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-gradient-to-b from-green-200 to-blue-200">
         <motion.div 
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 1, repeat: Infinity }}
@@ -449,7 +449,7 @@ export default function TrashShooter() {
   const config = getLevelConfig();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-green-100 to-green-200 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-b from-sky-200 via-green-100 to-green-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden flex flex-col">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {[...Array(8)].map((_, i) => (
@@ -481,18 +481,23 @@ export default function TrashShooter() {
       />
 
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-green-200 fixed top-0 left-0 right-0 z-50 shadow-lg">
+      <header className="bg-card/90 dark:bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => setGameState('menu')} className="rounded-full">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setGameState('menu')} 
+                className="rounded-full text-foreground hover:bg-muted"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="font-display font-bold text-lg text-green-800 flex items-center gap-2">
+                <h1 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
                   🎯 Eco Bubble Pop
                 </h1>
-                <p className="text-xs text-green-600">Level {selectedLevel} • Target: {config.targetScore}</p>
+                <p className="text-xs text-muted-foreground">Level {selectedLevel} • Target: {config.targetScore}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -500,7 +505,7 @@ export default function TrashShooter() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="rounded-full"
+                className="rounded-full text-foreground"
               >
                 {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </Button>
@@ -515,11 +520,11 @@ export default function TrashShooter() {
                   {combo}x!
                 </motion.div>
               )}
-              <div className="bg-yellow-100 px-4 py-2 rounded-full">
-                <span className="font-bold text-yellow-700">⭐ {score}</span>
+              <div className="bg-yellow-100 dark:bg-yellow-900/50 px-4 py-2 rounded-full">
+                <span className="font-bold text-yellow-700 dark:text-yellow-300">⭐ {score}</span>
               </div>
               <div className={`px-4 py-2 rounded-full font-bold ${
-                timeLeft <= 10 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-green-100 text-green-700'
+                timeLeft <= 10 ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 animate-pulse' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
               }`}>
                 ⏱️ {timeLeft}s
               </div>
@@ -532,7 +537,7 @@ export default function TrashShooter() {
       {gameState === 'playing' && (
         <div 
           ref={gameAreaRef}
-          className="h-screen pt-20 relative"
+          className="flex-1 relative"
           onMouseMove={handleMouseMove}
           onTouchMove={handleMouseMove}
           onClick={handleShoot}
@@ -584,17 +589,42 @@ export default function TrashShooter() {
             )}
           </AnimatePresence>
 
-          {/* Aim line */}
+          {/* Enhanced Aim line - longer and more visible */}
           {!shootingBubble && (
-            <div 
-              className="absolute bottom-[15%] left-1/2 origin-bottom"
-              style={{ 
-                transform: `translateX(-50%) rotate(${90 - aimAngle}deg)`,
-                width: '3px',
-                height: '100px',
-                background: 'linear-gradient(to top, rgba(34, 197, 94, 0.8), transparent)',
-              }}
-            />
+            <>
+              {/* Main aim line */}
+              <div 
+                className="absolute bottom-[15%] left-1/2 origin-bottom pointer-events-none"
+                style={{ 
+                  transform: `translateX(-50%) rotate(${90 - aimAngle}deg)`,
+                  width: '4px',
+                  height: '200px',
+                  background: 'linear-gradient(to top, rgba(34, 197, 94, 1), rgba(34, 197, 94, 0.6), transparent)',
+                  borderRadius: '2px',
+                }}
+              />
+              {/* Dotted guide line for extended trajectory */}
+              <div 
+                className="absolute bottom-[15%] left-1/2 origin-bottom pointer-events-none"
+                style={{ 
+                  transform: `translateX(-50%) rotate(${90 - aimAngle}deg)`,
+                  width: '3px',
+                  height: '350px',
+                  background: 'repeating-linear-gradient(to top, transparent, transparent 10px, rgba(34, 197, 94, 0.4) 10px, rgba(34, 197, 94, 0.4) 20px)',
+                }}
+              />
+              {/* Aim dot at end */}
+              <motion.div
+                className="absolute w-4 h-4 bg-green-500 rounded-full shadow-lg pointer-events-none"
+                style={{
+                  left: `calc(50% + ${Math.cos((aimAngle * Math.PI) / 180) * 180}px)`,
+                  bottom: `calc(15% + ${Math.sin((aimAngle * Math.PI) / 180) * 180}px)`,
+                  transform: 'translate(-50%, 50%)',
+                }}
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+              />
+            </>
           )}
 
           {/* Shooter */}
@@ -612,8 +642,8 @@ export default function TrashShooter() {
             
             {/* Next bubble indicator */}
             {nextBubble && (
-              <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full">
-                <span className="text-sm text-gray-600 font-medium">Next:</span>
+              <div className="flex items-center gap-2 bg-card/80 dark:bg-card px-3 py-1 rounded-full">
+                <span className="text-sm text-muted-foreground font-medium">Next:</span>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xl ${nextBubble.color}`}>
                   {nextBubble.emoji}
                 </div>
@@ -623,18 +653,18 @@ export default function TrashShooter() {
 
           {/* Tap to shoot hint */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
-            <p className="text-gray-600 font-medium bg-white/80 px-4 py-2 rounded-full">👆 Aim & Tap to shoot!</p>
+            <p className="text-foreground font-medium bg-card/80 dark:bg-card px-4 py-2 rounded-full text-sm">👆 Aim & Tap to shoot!</p>
           </div>
         </div>
       )}
 
       {/* Game Over Screen */}
       {gameState === 'finished' && (
-        <div className="min-h-screen pt-20 flex items-center justify-center px-4 relative z-10">
+        <div className="flex-1 flex items-center justify-center px-4 relative z-10">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+            className="bg-card/95 dark:bg-card backdrop-blur-sm rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
           >
             <motion.div 
               className="text-8xl mb-4"
@@ -647,21 +677,21 @@ export default function TrashShooter() {
               {levelWon ? '🎉' : '😊'}
             </motion.div>
 
-            <h2 className="font-display font-bold text-3xl text-gray-800 mb-2">
+            <h2 className="font-display font-bold text-3xl text-foreground mb-2">
               {levelWon ? 'Amazing!' : 'Good Try!'}
             </h2>
-            <p className="text-gray-600 mb-6 text-lg">
+            <p className="text-muted-foreground mb-6 text-lg">
               {levelWon ? 'You matched them all! 🌟' : `Target was ${config.targetScore} points!`}
             </p>
 
-            <div className="bg-yellow-100 rounded-2xl p-6 mb-6">
-              <p className="text-sm text-yellow-700">Your Score</p>
-              <p className="font-bold text-5xl text-yellow-600">{score}</p>
-              <p className="text-sm text-yellow-700 mt-2">+{Math.floor(score / 10)} points earned ⭐</p>
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl p-6 mb-6">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">Your Score</p>
+              <p className="font-bold text-5xl text-yellow-600 dark:text-yellow-400">{score}</p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">+{Math.floor(score / 10)} points earned ⭐</p>
             </div>
 
             {isSaving ? (
-              <p className="text-gray-500">Saving progress... 🎯</p>
+              <p className="text-muted-foreground">Saving progress... 🎯</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {levelWon && selectedLevel < 5 && (

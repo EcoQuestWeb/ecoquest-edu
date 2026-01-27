@@ -3,8 +3,6 @@ import { ArrowLeft, Play, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LevelSelector } from './LevelSelector';
-import { PlantGrowth } from './PlantGrowth';
-import { GameDashboard } from './GameDashboard';
 import { useLevelProgress, GameName } from '@/contexts/LevelProgressContext';
 
 interface GameEntryScreenProps {
@@ -44,13 +42,18 @@ export function GameEntryScreen({
   const currentPlantInfo = plantStageLabels[plantStage];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-eco-sky/20 via-background to-eco-leaf/10">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-b from-eco-sky/20 via-background to-eco-leaf/10 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-auto flex flex-col">
       {/* Header */}
-      <header className="bg-card/95 backdrop-blur-md border-b border-border fixed top-0 left-0 right-0 z-50">
+      <header className="bg-card/95 dark:bg-card backdrop-blur-md border-b border-border flex-shrink-0 z-50">
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/')}
+                className="text-foreground hover:bg-muted"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-2">
@@ -65,14 +68,19 @@ export function GameEntryScreen({
                 </div>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="text-foreground hover:bg-muted"
+            >
               <User className="w-5 h-5" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-24 sm:pt-28 pb-8">
+      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 overflow-auto">
         <div className="max-w-4xl mx-auto">
           {/* Mobile: Stack layout, Desktop: Two columns */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -83,7 +91,7 @@ export function GameEntryScreen({
               transition={{ duration: 0.5 }}
               className="order-2 lg:order-1"
             >
-              <div className="eco-card">
+              <div className="bg-card dark:bg-card rounded-2xl p-4 sm:p-6 shadow-lg border border-border">
                 <LevelSelector
                   gameName={gameName}
                   totalLevels={totalLevels}
@@ -101,7 +109,7 @@ export function GameEntryScreen({
                   <Button
                     onClick={onStartGame}
                     disabled={!isLevelUnlocked(gameName, selectedLevel)}
-                    className="w-full py-6 text-lg font-bold gradient-nature text-primary-foreground shadow-lg hover:shadow-xl transition-all"
+                    className="w-full py-6 text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                   >
                     <Play className="w-6 h-6 mr-2" />
                     Play Level {selectedLevel}
@@ -123,14 +131,14 @@ export function GameEntryScreen({
               transition={{ duration: 0.5, delay: 0.2 }}
               className="order-1 lg:order-2"
             >
-              <div className="eco-card text-center">
+              <div className="bg-card dark:bg-card rounded-2xl p-4 sm:p-6 shadow-lg border border-border text-center">
                 <h3 className="font-display font-bold text-lg text-foreground mb-4">
                   🌱 Your Progress
                 </h3>
 
                 {/* Big Plant Visual */}
                 <motion.div
-                  className="relative w-48 h-48 sm:w-56 sm:h-56 mx-auto rounded-full bg-gradient-to-br from-eco-leaf/20 to-eco-forest/10 flex items-center justify-center mb-6"
+                  className="relative w-48 h-48 sm:w-56 sm:h-56 mx-auto rounded-full bg-gradient-to-br from-eco-leaf/20 to-eco-forest/10 dark:from-green-900/30 dark:to-green-800/20 flex items-center justify-center mb-6"
                   animate={plantStage >= 4 ? {
                     boxShadow: [
                       '0 0 0 0 rgba(34, 197, 94, 0)',
@@ -210,7 +218,7 @@ export function GameEntryScreen({
                       key={idx}
                       className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
                         idx <= plantStage
-                          ? 'bg-eco-leaf/20'
+                          ? 'bg-eco-leaf/20 dark:bg-green-900/50'
                           : 'bg-muted/50 opacity-50'
                       }`}
                       whileHover={{ scale: 1.1 }}
@@ -223,14 +231,14 @@ export function GameEntryScreen({
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 mt-6">
-                  <div className="bg-muted/50 rounded-xl p-3 text-center">
+                  <div className="bg-muted/50 dark:bg-muted rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-foreground">
                       {progress.levelsCompleted.length}/{totalLevels}
                     </p>
                     <p className="text-xs text-muted-foreground">Levels Done</p>
                   </div>
-                  <div className="bg-eco-sun/20 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-eco-earth">
+                  <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-xl p-3 text-center">
+                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       {progress.totalPoints}
                     </p>
                     <p className="text-xs text-muted-foreground">Points</p>
